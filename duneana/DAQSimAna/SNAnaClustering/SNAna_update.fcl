@@ -1,0 +1,57 @@
+BEGIN_PROLOG
+
+standard_snanaupdate:
+{
+  module_type:		SNAnaUpdate
+
+  RawDigitLabel:	"daq"           #String for the process that made the raw digits
+  HitLabel:		"hitfd"         #String for the process that made the reco hits
+  CalDataModuleLabel:   "caldata"
+  OpHitModuleLabel:     "ophit"
+
+  SaveNeighbourADCs:    false
+  SaveTruth:            false # save all the generated particle
+  SaveIDEs:             false
+  SaveTPC:              true
+  SavePDS:              true
+
+  GEANT4Label:        "largeant"                	# The label for the process which ran GEANT4
+  MARLEYLabel:        "marley"                  	# The label for the process which produced MARLEY events
+
+  Argon39_Lar_Label:  "Ar39GenInLAr"            	# The label for the process which produced Argon 39 events
+  Argon42_Lar_Label:  "Ar42GenInLAr"            	# The label for the process which produced Argon 42 events
+  Krypton_Lar_Label:  "Kr85GenInLAr"            	# The label for the process which produced Krypton events
+  Potas42_Lar_Label:  "K42From42ArGenInLAr"     	# etc. 
+  Rado222_Lar_Label:  "Rn222ChainGenInLAr"       
+  Po218_Lar_Label:    "Rn222ChainPo218GenInLAr" 
+  Pb214_Lar_Label:    "Rn222ChainPb214GenInLAr" 
+  Bi214_Lar_Label:    "Rn222ChainBi214GenInLAr" 
+  Pb210_Lar_Label:    "Rn222ChainPb210GenInLAr" 
+  Rn220Cha_Lar_Label: "Rn220ChainPb212GenInLAr" 	# New in Model 3
+
+  Potas40_CPA_Label:  "K40inGenInCPA"           
+  U238Cha_CPA_Label:  "U238ChainGenInCPA"       
+  Argon42_CPA_Label:  "K42From42ArGenInCPA"      
+  Po218_CPA_Label:    "Rn222ChainPo218GenInCPA"
+  Pb214_CPA_Label:    "Rn222ChainPb214GenInCPA"
+  Bi214_CPA_Label:    "Rn222ChainBi214GenInCPA"    
+  Pb210_CPA_Label:    "Rn222ChainPb210GenInCPA"
+  Bi210_CPA_Label:    "Rn222ChainFromBi210GenInCPA"
+  Rn220Cha_CPA_Label: "Rn220ChainFromPb212GenInCPA" 	# New in Model 3
+
+  Cobal60_APA_Label:  "Co60inGenInAPA"          
+  U238Cha_APA_Label:  "U238ChainGenInAPA"        
+  Th232Cha_APA_Label: "Th232ChainGenInAPA"		# New in Model 3
+
+  Rado222_PDS_Label:  "Rn222ChainGenInPDS"      
+
+  NeutronLabel:       "CavernwallNeutronsAtLAr"         # Renamed in Model 3
+  CavernNGammasLabel: "CavernNGammasAtLAr"		# Renamed in Model 3
+  CavernWallGammasLabel: "CavernwallGammasAtLAr"        # Renamed in Model 3   
+  
+  FoamGammasLabel:    "foamGammasAtLAr"			# New in Model 3
+  CryostatGammasLabel: "CryostatNGammasAtLAr"		# New in Model 3
+  
+}
+
+END_PROLOG

@@ -1,0 +1,38 @@
+#include "services_dune.fcl"
+#include "SupernovaAna2.fcl"
+
+process_name: SupernovaAna2
+
+source:
+{
+  module_type: RootInput
+  maxEvents:  -1      # Number of events to create
+}
+
+services:
+{
+  ###TFileService: { fileName: "SupernovaAna2_hist.root" }
+  TimeTracker:       {}
+  RandomNumberGenerator: {} #ART native random number generator
+  Geometry: @local::dune10kt_1x2x6_geo
+  @table::dunefd_services
+}
+
+services.PhotonBackTrackerService:	@erase
+
+
+
+physics:
+{
+  analyzers:
+  {
+    supernovaana2:     @local::standard_supernovaana2
+  }
+
+  ana: [ supernovaana2 ]
+  end_paths: [ ana ] 
+
+}
+services.Geometry.GDML: "dune10kt_v4_1x2x6.gdml"
+services.Geometry.Name: "dune10kt_v4_1x2x6"
+services.Geometry.ROOT: "dune10kt_v4_1x2x6.gdml"

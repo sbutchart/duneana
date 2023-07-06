@@ -1,0 +1,14 @@
+BEGIN_PROLOG
+
+standard_supernovaana2:
+{
+  module_type:		SupernovaAna2
+  #====================
+  TruthLabel:		"marley"	# a string with the process label for the module that made the MCTruth objects
+  BackgroundLabel:      "U238ChainGenInCPA"       # change this to the label for the background you want to make plots for!
+
+				     	# options for model 1: ar39Gen, ar42Gen, apaGen, cNeutronGen, cpaGen, kr85Gen, rn222Gen, po210Gen
+					# as seen in, e.g. dunesw/fcl/dunefd/gen/background/prodbackground_radiological_dune10kt_1x2x6.fcl
+}
+
+END_PROLOG

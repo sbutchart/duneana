@@ -1,0 +1,24 @@
+BEGIN_PROLOG
+
+standard_snana:
+{
+  module_type:		SNAna2
+
+  RawDigitLabel:	"daq"           #String for the process that made the raw digits
+  HitLabel:		"hitfd"         #String for the process that made the reco hits
+  CalDataModuleLabel:   "caldata"
+  OpHitModuleLabel:     "ophit"
+
+  SaveNeighbourADCs:    true
+  SaveTruth:            true # save all the generated particle
+  SaveIDEs:             true
+  SaveTPC:              false
+  SavePDS:              false
+
+
+  GEANT4Label:   "largeant"    # The label for the process which ran GEANT4
+  MARLEYLabel:   "marley"      # The label for the process which produced MARLEY events
+
+}
+
+END_PROLOG

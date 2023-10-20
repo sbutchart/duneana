@@ -11,9 +11,9 @@ standard_snana:
 
   SaveNeighbourADCs:    true
   SaveTruth:            true # save all the generated particle
-  SaveIDEs:             true
-  SaveTPC:              false
-  SavePDS:              false
+  SaveIDEs:             false
+  SaveTPC:              true
+  SavePDS:              true
 
 
   GEANT4Label:   "largeant"    # The label for the process which ran GEANT4

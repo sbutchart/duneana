@@ -4,6 +4,7 @@
 //
 // Chris Marshall's version
 // Largely based on historical FDSensOpt/CAFMaker_module.cc
+// Overhauled by Pierre Granger to adapt it to the new CAF format
 //
 ///////////////////////////////////////////////////////////////////////
 
@@ -37,11 +38,17 @@
 #include "dunereco/CVN/func/InteractionType.h"
 #include "dunereco/CVN/func/Result.h"
 #include "dunereco/RegCNN/func/RegCNNResult.h"
+#include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+#include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/Vertex.h"
+// #include "larcore/Geometry/Geometry.h"
+
 
 // dunerw stuff
 #include "systematicstools/interface/ISystProviderTool.hh"
 #include "systematicstools/utility/ParameterAndProviderConfigurationUtility.hh"
 #include "systematicstools/utility/exceptions.hh"
+#include "nugen/EventGeneratorBase/GENIE/GENIE2ART.h"
 //#include "systematicstools/utility/md5.hh"
 
 // root
@@ -57,7 +64,9 @@
 
 // genie
 #include "Framework/EventGen/EventRecord.h"
+#include "Framework/Ntuple/NtpMCEventRecord.h"
 #include "Framework/GHEP/GHepParticle.h"
+
 
 namespace caf {
 
@@ -75,11 +84,19 @@ namespace caf {
 
 
     private:
-      void AddGlobalTreeToFile(TFile* f, SRGlobal& global);
-      void FillTruthInfo(caf::StandardRecord& sr,
-                         std::vector<simb::MCTruth> const& truth,
+      void FillTruthInfo(caf::SRTruthBranch& sr,
+                         std::vector<simb::MCTruth> const& mctruth,
+                         std::vector<simb::GTruth> const& gtruth,
                          std::vector<simb::MCFlux> const& flux,
-                         art::Event const& evt) const;
+                         art::Event const& evt);
+
+      void FillMetaInfo(caf::SRDetectorMeta &meta, art::Event const& evt) const;
+      void FillBeamInfo(caf::SRBeamBranch &beam, const art::Event &evt) const;
+      void FillRecoInfo(caf::SRCommonRecoBranch &recoBranch, const art::Event &evt) const;
+      void FillCVNInfo(caf::SRCVNScoreBranch &cvnBranch, const art::Event &evt) const;
+      void FillEnergyInfo(caf::SRNeutrinoEnergyBranch &ErecBranch, const art::Event &evt) const;
+      void FillRecoParticlesInfo(caf::SRRecoParticlesBranch &recoParticlesBranch, const art::Event &evt) const;
+      int FillGENIERecord(simb::MCTruth const& mctruth, simb::GTruth const& gtruth);
 
       std::string fMVASelectLabel;
       std::string fMVASelectNueLabel;
@@ -91,17 +108,21 @@ namespace caf {
       std::string fEnergyRecoNueLabel;
       std::string fEnergyRecoNumuLabel;
       std::string fMVAMethod;
+      std::string fPandoraNuVertexModuleLabel;
 
-      TFile* fOutFile = 0;
-      TTree* fTree = 0;
-      TTree* fMetaTree = 0;
+      TFile* fOutFile = nullptr;
+      TTree* fTree = nullptr;
+      TTree* fMetaTree = nullptr;
+      TTree* fGENIETree = nullptr;
 
-      TFile* fFlatFile = 0;
-      TTree* fFlatTree = 0;
-      flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
+      TFile* fFlatFile = nullptr;
+      TTree* fFlatTree = nullptr;
+      flat::Flat<caf::StandardRecord>* fFlatRecord = nullptr;
 
-      double meta_pot;
-      int meta_run, meta_subrun, meta_version;
+      genie::NtpMCEventRecord* fEventRecord = nullptr;
+
+      double fMetaPOT;
+      int fMetaRun, fMetaSubRun, fMetaVersion;
 
       systtools::provider_list_t fSystProviders;
 
@@ -120,6 +141,8 @@ namespace caf {
 
     fEnergyRecoNueLabel = pset.get<std::string>("EnergyRecoNueLabel");
     fEnergyRecoNumuLabel = pset.get<std::string>("EnergyRecoNumuLabel");
+    fPandoraNuVertexModuleLabel = pset.get< std::string >("PandoraNuVertexModuleLabel");
+    fEventRecord = new genie::NtpMCEventRecord();
 
     // Get DUNErw stuff from its fhicl, which should be included on the CAFMaker config file
     if( !pset.has_key("generated_systematic_provider_configuration") ) {
@@ -162,7 +185,7 @@ namespace caf {
 
       // Create the branch. We will update the address before we write the tree
       caf::StandardRecord* rec = 0;
-      fTree->Branch("rec", &rec);
+      fTree->Branch("rec", "caf::StandardRecord", &rec);
     }
 
     if(fFlatFile){
@@ -175,199 +198,395 @@ namespace caf {
 
     fMetaTree = new TTree("meta", "meta");
 
-    fMetaTree->Branch("pot", &meta_pot, "pot/D");
-    fMetaTree->Branch("run", &meta_run, "run/I");
-    fMetaTree->Branch("subrun", &meta_subrun, "subrun/I");
-    fMetaTree->Branch("version", &meta_version, "version/I");
+    fMetaTree->Branch("pot", &fMetaPOT, "pot/D");
+    fMetaTree->Branch("run", &fMetaRun, "run/I");
+    fMetaTree->Branch("subrun", &fMetaSubRun, "subrun/I");
+    fMetaTree->Branch("version", &fMetaVersion, "version/I");
 
-    meta_pot = 0.;
-    meta_version = 1;
+    fMetaPOT = 0.;
+    fMetaVersion = 1;
+
+    fGENIETree = new TTree("genieEvt", "genieEvt");
+    fGENIETree->Branch("genie_record", "genie::NtpMCEventRecord", &fEventRecord);
+
+  }
 
 
-    caf::SRGlobal global;
+  //------------------------------------------------------------------------------
 
-    // make DUNErw variables
-    for( auto &sp : fSystProviders ) {
-      for(const systtools::SystParamHeader& head: sp->GetSystMetaData()){
-        std::cout << "Adding reweight " << head.systParamId << " for " << head.prettyName << " with " << head.paramVariations.size() << " shifts" << std::endl;
+  void CAFMaker::FillTruthInfo(caf::SRTruthBranch& truthBranch,
+                               std::vector<simb::MCTruth> const& mctruth,
+                               std::vector<simb::GTruth> const& gtruth,
+                               std::vector<simb::MCFlux> const& flux,
+                               art::Event const& evt)
+  {
+    std::cout <<"MCTruth size: " << mctruth.size() << std::endl;
+    std::cout <<"GTruth size: " << gtruth.size() << std::endl;
+    for(size_t i=0; i<mctruth.size(); i++){
+      caf::SRTrueInteraction inter;
 
-        caf::SRSystParamHeader hdr;
-        hdr.nshifts = head.paramVariations.size();
-        hdr.name = head.prettyName;
-        hdr.id = head.systParamId; // TODO is this necessary?
+      inter.id = i;
+      inter.genieIdx = FillGENIERecord(mctruth[i], gtruth[i]); //Filling the GENIE EventRecord tree and associating the right index here
 
-        global.wgts.params.push_back(hdr);
+      const simb::MCNeutrino &neutrino = mctruth[i].GetNeutrino();
+
+      inter.pdg = neutrino.Nu().PdgCode();
+      inter.pdgorig = flux[i].fntype;
+      inter.iscc = !(neutrino.CCNC()); // ccnc is 0=CC 1=NC
+      inter.mode = static_cast<caf::ScatteringMode>(neutrino.Mode());
+      inter.targetPDG = gtruth[i].ftgtPDG;
+      inter.hitnuc = gtruth[i].fHitNucPDG;
+      //TODO inter.removalE ; Not sure the info can be retrieved from Gtruth and MCTruth (at least not trivially)
+      inter.E = neutrino.Nu().E();
+
+      inter.vtx.SetX(neutrino.Lepton().Vx());
+      inter.vtx.SetY(neutrino.Lepton().Vy());
+      inter.vtx.SetZ(neutrino.Lepton().Vz());
+      inter.time = neutrino.Lepton().T();
+      inter.momentum.SetX(neutrino.Nu().Momentum().X());
+      inter.momentum.SetY(neutrino.Nu().Momentum().Y());
+      inter.momentum.SetZ(neutrino.Nu().Momentum().Z());
+
+      inter.W = neutrino.W();
+      inter.Q2 = neutrino.QSqr();
+      inter.bjorkenX = neutrino.X();
+      inter.inelasticity = neutrino.Y();
+
+      TLorentzVector q = neutrino.Nu().Momentum()-neutrino.Lepton().Momentum();
+      inter.q0 = q.E();
+      inter.modq = q.Vect().Mag();
+      inter.t = gtruth[i].fgT;
+      //TODO: inter.isvtxcont ; Not sure this is the best place to define containment
+
+      inter.ischarm = gtruth[i].fIsCharm;
+      inter.isseaquark = gtruth[i].fIsSeaQuark;
+      inter.resnum = gtruth[i].fResNum;
+      inter.xsec = gtruth[i].fXsec;
+      inter.genweight = gtruth[i].fweight;
+
+      //TODO: Need to see if these info can be retrieved
+      // inter.baseline ///< Distance from decay to interaction [m]
+      // inter.prod_vtx ///< Neutrino production vertex [cm; beam coordinates]
+      // inter.parent_dcy_mom ///< Neutrino parent momentum at decay [GeV; beam coordinates]
+      // inter.parent_dcy_mode ///< Parent hadron/muon decay mode
+      // inter.parent_pdg ///< PDG Code of parent particle ID
+      // inter.parent_dcy_E ///< Neutrino parent energy at decay [GeV]
+      // inter.imp_weight ///< Importance weight from flux file
+
+      const simb::MCGeneratorInfo &genInfo = mctruth[i].GeneratorInfo();
+
+      //TODO: Ask to add all the generators in the StandardRecord
+      std::map<simb::Generator_t, caf::Generator> genMap = {
+        {simb::Generator_t::kUnknown, caf::Generator::kUnknownGenerator},
+        {simb::Generator_t::kGENIE,   caf::Generator::kGENIE},
+        {simb::Generator_t::kCRY,     caf::Generator::kUnknownGenerator},
+        {simb::Generator_t::kGIBUU,   caf::Generator::kGIBUU},
+        {simb::Generator_t::kNuWro,   caf::Generator::kUnknownGenerator},
+        {simb::Generator_t::kMARLEY,  caf::Generator::kUnknownGenerator},
+        {simb::Generator_t::kNEUT,    caf::Generator::kNEUT},
+        {simb::Generator_t::kCORSIKA, caf::Generator::kUnknownGenerator},
+        {simb::Generator_t::kGEANT,   caf::Generator::kUnknownGenerator}
+      };
+
+      std::map<simb::Generator_t, caf::Generator>::iterator it = genMap.find(genInfo.generator);
+      if (it != genMap.end())
+      {
+        inter.generator = it->second;
+      }
+      else{
+        inter.generator = caf::Generator::kUnknownGenerator;
+      }
+
+      //Parsing the GENIE version because it is stored as a vector of uint.
+      size_t last = 0;
+      size_t next = 0;
+      std::string s(genInfo.generatorVersion);
+      char delimiter = '.';
+      while ((next = s.find(delimiter, last)) != string::npos){
+        inter.genVersion.push_back(std::stoi(s.substr(last, next - last)));  
+        last = next + 1;
+      }
+      inter.genVersion.push_back(std::stoi(s.substr(last)));
+
+      //TODO: Ask to implement a map in the StandardRecord to put everything there
+      if(genInfo.generatorConfig.find("tune") != genInfo.generatorConfig.end()){
+        inter.genConfigString = genInfo.generatorConfig.at("tune");
+      }
+
+      inter.nproton = 0;
+      inter.nneutron = 0;
+      inter.npip = 0;
+      inter.npim = 0;
+      inter.npi0 = 0;
+      inter.nprim = 0;
+      inter.nprefsi = 0;
+      inter.nsec = 0;
+
+      //Filling the same fields as ND-CAFMaker. Some fields are not filled at this stage
+      for( int p = 0; p < mctruth[i].NParticles(); p++ ) {
+        const simb::MCParticle &mcpart = mctruth[i].GetParticle(p);
+        if( mcpart.StatusCode() != genie::EGHepStatus::kIStStableFinalState
+          && mcpart.StatusCode() != genie::EGHepStatus::kIStHadronInTheNucleus) continue;
+
+        caf::SRTrueParticle part;
+        int pdg = mcpart.PdgCode();
+        part.pdg = pdg;
+        part.G4ID = mcpart.TrackId();
+        part.interaction_id = inter.id;
+        part.time = mcpart.T();
+        part.p = caf::SRLorentzVector(mcpart.Momentum());
+        part.start_pos = caf::SRVector3D(mcpart.Position().Vect());
+        part.end_pos = caf::SRVector3D(mcpart.EndPosition().Vect());
+        part.parent = mcpart.Mother();
+
+        for(int daughterID = 0; daughterID < mcpart.NumberDaughters(); daughterID++){
+          int daughter = mcpart.Daughter(daughterID);
+          part.daughters.push_back(daughter); //TOCHECK: Not sure this corresponds to the right id here
+        }
+
+        part.start_process = G4Process::kG4primary; //Coming from GENIE
+        part.end_process = G4Process::kG4UNKNOWN; //No idea of how to fill this
+
+        if( mcpart.StatusCode() == genie::EGHepStatus::kIStStableFinalState )
+        {
+          inter.prim.push_back(std::move(part));
+          inter.nprim++;
+
+          if( pdg == 2212 ) inter.nproton++;
+            else if( pdg == 2112 ) inter.nneutron++;
+            else if( pdg ==  211 ) inter.npip++;
+            else if( pdg == -211 ) inter.npim++;
+            else if( pdg ==  111 ) inter.npi0++;
+          }
+          else // kIStHadronInTheNucleus
+          {
+            inter.prefsi.push_back(std::move(part));
+            inter.nprefsi++;
+        }
+
+      }
+
+      truthBranch.nu.push_back(std::move(inter));
+    } // loop through MC truth i
+
+    truthBranch.nnu = mctruth.size();
+  }
+
+  //------------------------------------------------------------------------------
+
+  void CAFMaker::FillRecoInfo(caf::SRCommonRecoBranch &recoBranch, const art::Event &evt) const {
+    SRInteractionBranch &ixn = recoBranch.ixn;
+
+    //Only filling with Pandora Reco for the moment
+    std::vector<SRInteraction> &pandora = ixn.pandora;
+    
+    lar_pandora::PFParticleVector particleVector;
+    lar_pandora::LArPandoraHelper::CollectPFParticles(evt, fPandoraNuVertexModuleLabel, particleVector);
+    lar_pandora::VertexVector vertexVector;
+    lar_pandora::PFParticlesToVertices particlesToVertices;
+    lar_pandora::LArPandoraHelper::CollectVertices(evt, fPandoraNuVertexModuleLabel, vertexVector, particlesToVertices);
+
+    for (unsigned int n = 0; n < particleVector.size(); ++n) {
+      const art::Ptr<recob::PFParticle> particle = particleVector.at(n);
+      if(particle->IsPrimary()){
+        SRInteraction reco;
+
+        //Retrieving the reco vertex
+        lar_pandora::PFParticlesToVertices::const_iterator vIter = particlesToVertices.find(particle);
+        if (particlesToVertices.end() != vIter) {
+          const lar_pandora::VertexVector &vertexVector = vIter->second;
+          if (vertexVector.size() == 1) {
+            const art::Ptr<recob::Vertex> vertex = *(vertexVector.begin());
+            double xyz[3] = {0.0, 0.0, 0.0} ;
+            vertex->XYZ(xyz);
+            reco.vtx = SRVector3D(xyz[0], xyz[1], xyz[2]);
+            // fData->nuvtxpdg[iv] = particle->PdgCode(); TODO: Reuse this elsewhere, add a branch in SRNeutrinoHypothesisBranch for it
+          }
+        }
+
+        //TODO: Fill the direction
+        //SRDirectionBranch reco.dir
+
+
+        //Neutrino flavours hypotheses
+        SRNeutrinoHypothesisBranch &nuhyp = reco.nuhyp;
+        //Filling only CVN at the moment. Filling the same info for all the particles -> CVN applies to the whole event as far as I know
+        FillCVNInfo(nuhyp.cvn, evt);
+
+        //Neutrino energy hypothese
+        SRNeutrinoEnergyBranch &Enu = reco.Enu;
+        FillEnergyInfo(Enu, evt);
+
+        //List of reconstructed particles
+        SRRecoParticlesBranch &part = reco.part;
+        FillRecoParticlesInfo(part, evt);
+
+        //TODO, not sure of what to put there............
+        // std::vector<std::size_t>    truth;              ///< Indices of SRTrueInteraction(s), if relevant (use this index in SRTruthBranch::nu to get them)
+        // std::vector<float>   truthOverlap;              ///< Fractional overlap between this reco interaction and each true interaction
+
+        pandora.emplace_back(reco);
       }
     }
 
-    if(fOutFile) AddGlobalTreeToFile(fOutFile, global);
-    if(fFlatFile) AddGlobalTreeToFile(fFlatFile, global);
+    ixn.npandora = pandora.size();
+    ixn.ndlp = ixn.dlp.size();
   }
+
 
   //------------------------------------------------------------------------------
-  void CAFMaker::AddGlobalTreeToFile(TFile* f, SRGlobal& global)
-  {
-    f->cd();
-    TTree* globalTree = new TTree("globalTree", "globalTree");
-    caf::SRGlobal* pglobal = &global;
-    TBranch* br = globalTree->Branch("global", "caf::SRGlobal", &pglobal);
-    if(!br) abort();
-    globalTree->Fill();
-    globalTree->Write();
-  }
-
-  void CAFMaker::FillTruthInfo(caf::StandardRecord& sr,
-                               std::vector<simb::MCTruth> const& truth,
-                               std::vector<simb::MCFlux> const& flux,
-                               art::Event const& evt) const
-  {
-    for(size_t i=0; i<truth.size(); i++){
-
-      if(i>1){
-        mf::LogWarning("CAFMaker") << "Skipping MC truth index " << i;
-        continue;
-      }
-
-      sr.isFD   = 1; // always FD
-      sr.isFHC  = 999; // don't know how to get this?
-      sr.isCC   = !(truth[i].GetNeutrino().CCNC());  // ccnc is 0=CC 1=NC
-      sr.nuPDG  = truth[i].GetNeutrino().Nu().PdgCode();
-      sr.nuPDGunosc = flux[i].fntype;
-      sr.mode   = truth[i].GetNeutrino().Mode(); //0=QE/El, 1=RES, 2=DIS, 3=Coherent production; this is different than mode in ND
-      sr.Ev     = truth[i].GetNeutrino().Nu().E();
-      sr.Q2     = truth[i].GetNeutrino().QSqr();
-      sr.W      = truth[i].GetNeutrino().W();
-      sr.X      = truth[i].GetNeutrino().X();
-      sr.Y      = truth[i].GetNeutrino().Y();
-      sr.NuMomX = truth[i].GetNeutrino().Nu().Momentum().X();
-      sr.NuMomY = truth[i].GetNeutrino().Nu().Momentum().Y();
-      sr.NuMomZ = truth[i].GetNeutrino().Nu().Momentum().Z();
-
-      sr.vtx_x  = truth[i].GetNeutrino().Lepton().Vx();
-      sr.vtx_y  = truth[i].GetNeutrino().Lepton().Vy();
-      sr.vtx_z  = truth[i].GetNeutrino().Lepton().Vz();
-
-      //Lepton stuff
-      sr.LepPDG   = truth[i].GetNeutrino().Lepton().PdgCode();
-      sr.LepMomX  = truth[i].GetNeutrino().Lepton().Momentum().X();
-      sr.LepMomY  = truth[i].GetNeutrino().Lepton().Momentum().Y();
-      sr.LepMomZ  = truth[i].GetNeutrino().Lepton().Momentum().Z();
-      sr.LepE     = truth[i].GetNeutrino().Lepton().Momentum().T();
-      sr.LepNuAngle = truth[i].GetNeutrino().Nu().Momentum().Vect().Angle(truth[i].GetNeutrino().Lepton().Momentum().Vect());
-
-      sr.nP     = 0;
-      sr.nN     = 0;
-      sr.nipip  = 0;
-      sr.nipim  = 0;
-      sr.nipi0  = 0;
-      sr.nikp   = 0;
-      sr.nikm   = 0;
-      sr.nik0   = 0;
-      sr.niem   = 0;
-      sr.niother = 0;
-      sr.nNucleus = 0;
-      sr.nUNKNOWN = 0;
-
-      sr.eP = 0.;
-      sr.eN = 0.;
-      sr.ePip = 0.;
-      sr.ePim = 0.;
-      sr.ePi0 = 0.;
-      sr.eOther = 0.;
-
-      for( int p = 0; p < truth[i].NParticles(); p++ ) {
-        if( truth[i].GetParticle(p).StatusCode() == genie::kIStHadronInTheNucleus ) {
-
-          int pdg = truth[i].GetParticle(p).PdgCode();
-          double ke = truth[i].GetParticle(p).E() - truth[i].GetParticle(p).Mass();
-          if     ( pdg == genie::kPdgProton ) {
-            sr.nP++;
-            sr.eP += ke;
-          } else if( pdg == genie::kPdgNeutron ) {
-            sr.nN++;
-            sr.eN += ke;
-          } else if( pdg == genie::kPdgPiP ) {
-            sr.nipip++;
-            sr.ePip += ke;
-          } else if( pdg == genie::kPdgPiM ) {
-            sr.nipim++;
-            sr.ePim += ke;
-          } else if( pdg == genie::kPdgPi0 ) {
-            sr.nipi0++;
-            sr.ePi0 += ke;
-          } else if( pdg == genie::kPdgKP ) {
-            sr.nikp++;
-            sr.eOther += ke;
-          } else if( pdg == genie::kPdgKM ) {
-            sr.nikm++;
-            sr.eOther += ke;
-          } else if( pdg == genie::kPdgK0 || pdg == genie::kPdgAntiK0 || pdg == genie::kPdgK0L || pdg == genie::kPdgK0S ) {
-            sr.nik0++;
-            sr.eOther += ke;
-          } else if( pdg == genie::kPdgGamma ) {
-            sr.niem++;
-            sr.eOther += ke;
-          } else if( genie::pdg::IsHadron(pdg) ) {
-            sr.niother++; // charm mesons, strange and charm baryons, antibaryons, etc.
-            sr.eOther += ke;
-          } else if( genie::pdg::IsIon(pdg) ) {
-            sr.nNucleus++;
-          } else {
-            sr.nUNKNOWN++;
-          }
-
-        }
-      }
-
-      // Reweighting variables
-
-      // Consider
-      //systtools::ScrubUnityEventResponses(er);
-
-      sr.total_xsSyst_cv_wgt = 1;
-
-      for(auto &sp : fSystProviders ) {
-        std::unique_ptr<systtools::EventAndCVResponse> syst_resp = sp->GetEventVariationAndCVResponse(evt);
-        if( !syst_resp ) {
-          std::cout << "[ERROR]: Got nullptr systtools::EventResponse from provider "
-                    << sp->GetFullyQualifiedName();
-          abort();
-        }
-
-        // The iteration order here is the same as how we filled SRGlobal, so
-        // no need to do any work to make sure they align.
-        //
-        // NB this will all go wrong if we ever support more than one MCTruth
-        // per event.
-        for(const std::vector<systtools::VarAndCVResponse>& resp: *syst_resp){
-          for(const systtools::VarAndCVResponse& it: resp){
-            // Need begin/end to convert double to float
-            sr.xsSyst_wgt.emplace_back(it.responses.begin(), it.responses.end());
-            sr.cvwgt.push_back(it.CV_response);
-            sr.total_xsSyst_cv_wgt *= it.CV_response;
-          }
-        }
-      }
-    } // loop through MC truth i
-  }
-
-  //------------------------------------------------------------------------------
+ 
+ 
   void CAFMaker::beginSubRun(const art::SubRun& sr)
   {
-    auto pots = sr.getHandle< sumdata::POTSummary >("generator");
-    if( pots ) meta_pot += pots->totpot;
+    art::Handle<sumdata::POTSummary> pots = sr.getHandle<sumdata::POTSummary>("generator");
+    if( pots ) fMetaPOT += pots->totpot;
+
+    fMetaRun = sr.id().subRun();
+    fMetaSubRun = sr.id().run();
+
   }
 
   //------------------------------------------------------------------------------
+
+  void CAFMaker::FillMetaInfo(caf::SRDetectorMeta &meta, const art::Event &evt) const
+  {
+    meta.enabled = true;
+    meta.run = evt.id().run();
+    meta.subrun = evt.id().subRun();
+    meta.event = evt.id().event();
+    meta.subevt = 0; //Hardcoded to 0, not sure of how this should be used
+
+    //Nothing is filled about the trigger for the moment
+  }
+
+  //------------------------------------------------------------------------------
+
+  void CAFMaker::FillBeamInfo(caf::SRBeamBranch &beam, const art::Event &evt) const
+  {
+    //TODO
+    beam.ismc = true; //Hardcoded to true at the moment.
+  }
+
+  //------------------------------------------------------------------------------
+
+  void CAFMaker::FillCVNInfo(caf::SRCVNScoreBranch &cvnBranch, const art::Event &evt) const
+  {
+    art::InputTag itag1(fCVNLabel, "cvnresult");
+    art::Handle<std::vector<cvn::Result>> cvnin = evt.getHandle<std::vector<cvn::Result>>(itag1);
+
+    if( !cvnin.failedToGet() && !cvnin->empty()) {
+      cvnBranch.isnubar = (*cvnin)[0].GetIsAntineutrinoProbability() > 0.5; //Hardcoded 0.5 as threshold for nu/nubar
+
+      cvnBranch.nue = (*cvnin)[0].GetNueProbability();
+      cvnBranch.numu = (*cvnin)[0].GetNumuProbability();
+      cvnBranch.nutau = (*cvnin)[0].GetNutauProbability();
+      cvnBranch.nc = (*cvnin)[0].GetNCProbability();
+
+      cvnBranch.protons0 = (*cvnin)[0].Get0protonsProbability();
+      cvnBranch.protons1 = (*cvnin)[0].Get1protonsProbability();
+      cvnBranch.protons2 = (*cvnin)[0].Get2protonsProbability();
+      cvnBranch.protonsN = (*cvnin)[0].GetNprotonsProbability();
+
+      cvnBranch.chgpi0 = (*cvnin)[0].Get0pionsProbability();
+      cvnBranch.chgpi1 = (*cvnin)[0].Get1pionsProbability();
+      cvnBranch.chgpi2 = (*cvnin)[0].Get2pionsProbability();
+      cvnBranch.chgpiN = (*cvnin)[0].GetNpionsProbability();
+
+      cvnBranch.pizero0 = (*cvnin)[0].Get0pizerosProbability();
+      cvnBranch.pizero1 = (*cvnin)[0].Get1pizerosProbability();
+      cvnBranch.pizero2 = (*cvnin)[0].Get2pizerosProbability();
+      cvnBranch.pizeroN = (*cvnin)[0].GetNpizerosProbability();
+
+      cvnBranch.neutron0 = (*cvnin)[0].Get0neutronsProbability();
+      cvnBranch.neutron1 = (*cvnin)[0].Get1neutronsProbability();
+      cvnBranch.neutron2 = (*cvnin)[0].Get2neutronsProbability();
+      cvnBranch.neutronN = (*cvnin)[0].GetNneutronsProbability();
+    }
+  }
+
+  //------------------------------------------------------------------------------
+
+  void CAFMaker::FillEnergyInfo(caf::SRNeutrinoEnergyBranch &ErecBranch, const art::Event &evt) const
+  {
+    //Filling the reg CNN results
+    art::InputTag itag(fRegCNNLabel, "regcnnresult");
+    art::Handle<std::vector<cnn::RegCNNResult>> regcnn = evt.getHandle<std::vector<cnn::RegCNNResult>>(itag);
+    if(!regcnn.failedToGet() && !regcnn->empty()){
+        const std::vector<float>& cnnResults = (*regcnn)[0].fOutput;
+        ErecBranch.regcnn = cnnResults[0];
+    }
+
+    //TODO: add the calo and lep_calo methods. Might need to be changed for FD! -> Start some discussion maybe.
+
+    
+  }
+
+  //------------------------------------------------------------------------------
+
+  void CAFMaker::FillRecoParticlesInfo(caf::SRRecoParticlesBranch &recoParticlesBranch, const art::Event &evt) const
+  {
+    //TODO: Need to add the reco particles there. Probably a boring job...
+  }
+
+
+  //------------------------------------------------------------------------------
+
+  int CAFMaker::FillGENIERecord(simb::MCTruth const& mctruth, simb::GTruth const& gtruth)
+  {
+    genie::EventRecord* record = evgb::RetrieveGHEP(mctruth, gtruth);
+    int cur_idx = fGENIETree->GetEntries();
+    fEventRecord->Fill(cur_idx, record);
+    fGENIETree->Fill();
+
+    delete record;
+
+    return cur_idx;
+  }
+
+
+  //------------------------------------------------------------------------------
+  
   void CAFMaker::analyze(art::Event const & evt)
   {
     caf::StandardRecord sr;
+    caf::StandardRecord* psr = &sr;
+    
 
     if(fTree){
-      caf::StandardRecord* psr = &sr;
+      
       fTree->SetBranchAddress("rec", &psr);
     }
 
+    //TODO: Select the right detector to be filled based on the geometry name
+    // art::ServiceHandle<geo::Geometry const> fGeometry;
+    // std::string geoName = fGeometry->DetectorName();
+
+
+
+    FillMetaInfo(sr.meta.fd_hd, evt);
+    // std::cout << "Eid -> " << sr.meta.fd_hd.event << std::endl;
+    // std::cout << "Enabled -> " << sr.meta.fd_hd.enabled << std::endl;
+    FillBeamInfo(sr.beam, evt);
+    art::Handle<std::vector<simb::MCTruth>> mct = evt.getHandle< std::vector<simb::MCTruth> >("generator");
+    art::Handle<std::vector<simb::GTruth>> gt = evt.getHandle< std::vector<simb::GTruth> >("generator");
+    if ( !mct ) {
+      mf::LogWarning("CAFMaker") << "No MCTruth. SRTruthBranch will be empty!";
+    }
+    else if ( !gt ) {
+      mf::LogWarning("CAFMaker") << "No GTruth. SRTruthBranch will be empty!";
+    }
+    else {
+      FillTruthInfo(sr.mc, *mct, *gt, evt.getProduct<std::vector<simb::MCFlux> >("generator"), evt);
+    }
+
+    FillRecoInfo(sr.common, evt);
+
+    //TODO -> Coordinate with sim/reco to see what to put there
+    //SRFDBranch
+
+
+    /*
     auto pidin = evt.getHandle<dunemva::MVASelectPID>(fMVASelectLabel);
     auto pidinnue = evt.getHandle<dunemva::MVASelectPID>(fMVASelectNueLabel);
     auto pidinnumu = evt.getHandle<dunemva::MVASelectPID>(fMVASelectNumuLabel);
@@ -378,9 +597,6 @@ namespace caf {
     auto ereconuein = evt.getHandle<dune::EnergyRecoOutput>(fEnergyRecoNueLabel);
     auto ereconumuin = evt.getHandle<dune::EnergyRecoOutput>(fEnergyRecoNumuLabel);
 
-    sr.run = evt.id().run();
-    sr.subrun = evt.id().subRun();
-    sr.event = evt.id().event();
     meta_run = sr.run;
     meta_subrun = sr.subrun;
 
@@ -408,51 +624,6 @@ namespace caf {
       sr.mvanumu = pidinnumu->pid;
     }
 
-    if( !cvnin.failedToGet() ) {
-      //using i = cvn::Interaction;
-      //if(cvnin->empty() || (*cvnin)[0].fOutput.size() <= i::kNutauOther){
-      if(cvnin->empty()){
-        sr.CVNResultIsAntineutrino = sr.CVNResultNue = sr.CVNResultNumu = sr.CVNResultNutau = sr.CVNResultNC = \
-        sr.CVNResult0Protons = sr.CVNResult1Protons = sr.CVNResult2Protons = sr.CVNResultNProtons = \
-        sr.CVNResult0Pions = sr.CVNResult1Pions = sr.CVNResult2Pions = sr.CVNResultNPions = \
-        sr.CVNResult0Pizeros = sr.CVNResult1Pizeros = sr.CVNResult2Pizeros = sr.CVNResultNPizeros = \
-        sr.CVNResult0Neutrons = sr.CVNResult1Neutrons = sr.CVNResult2Neutrons = sr.CVNResultNNeutrons = -3;
-      }
-      else{
-        //const std::vector<float>& v = (*cvnin)[0].fOutput;
-        //sr.CVNResultNue = v[i::kNueQE] + v[i::kNueRes] + v[i::kNueDIS] + v[i::kNueOther];
-        //sr.CVNResultNumu = v[i::kNumuQE] + v[i::kNumuRes] + v[i::kNumuDIS] + v[i::kNumuOther];
-        //sr.CVNResultNutau = v[i::kNutauQE] + v[i::kNutauRes] + v[i::kNutauDIS] + v[i::kNutauOther]
-
-        sr.CVNResultIsAntineutrino = (*cvnin)[0].GetIsAntineutrinoProbability();
-
-        sr.cvnnue = (*cvnin)[0].GetNueProbability();
-        sr.cvnnumu = (*cvnin)[0].GetNumuProbability();
-        sr.cvnnutau = (*cvnin)[0].GetNutauProbability();
-        sr.cvnnc = (*cvnin)[0].GetNCProbability();
-
-        sr.CVNResult0Protons = (*cvnin)[0].Get0protonsProbability();
-        sr.CVNResult1Protons = (*cvnin)[0].Get1protonsProbability();
-        sr.CVNResult2Protons = (*cvnin)[0].Get2protonsProbability();
-        sr.CVNResultNProtons = (*cvnin)[0].GetNprotonsProbability();
-
-        sr.CVNResult0Pions = (*cvnin)[0].Get0pionsProbability();
-        sr.CVNResult1Pions = (*cvnin)[0].Get1pionsProbability();
-        sr.CVNResult2Pions = (*cvnin)[0].Get2pionsProbability();
-        sr.CVNResultNPions = (*cvnin)[0].GetNpionsProbability();
-
-        sr.CVNResult0Pizeros = (*cvnin)[0].Get0pizerosProbability();
-        sr.CVNResult1Pizeros = (*cvnin)[0].Get1pizerosProbability();
-        sr.CVNResult2Pizeros = (*cvnin)[0].Get2pizerosProbability();
-        sr.CVNResultNPizeros = (*cvnin)[0].GetNpizerosProbability();
-
-        sr.CVNResult0Neutrons = (*cvnin)[0].Get0neutronsProbability();
-        sr.CVNResult1Neutrons = (*cvnin)[0].Get1neutronsProbability();
-        sr.CVNResult2Neutrons = (*cvnin)[0].Get2neutronsProbability();
-        sr.CVNResultNNeutrons = (*cvnin)[0].GetNneutronsProbability();
-      }
-    }
-
     sr.RegCNNNueE = -1.;  // initializing
     if(!regcnnin.failedToGet()){
       if (!regcnnin->empty()){
@@ -460,15 +631,7 @@ namespace caf {
         sr.RegCNNNueE = v[0];
       }
     }
-
-    auto mct = evt.getHandle< std::vector<simb::MCTruth> >("generator");
-    if ( !mct ) {
-      mf::LogWarning("CAFMaker") << "No MCTruth.";
-        }
-    else if ( !mct->empty() ) {
-      FillTruthInfo(sr, *mct, evt.getProduct<std::vector<simb::MCFlux> >("generator"), evt);
-      }
-
+    */
     if(fTree){
       fTree->Fill();
     }
@@ -494,6 +657,7 @@ namespace caf {
       fOutFile->cd();
       fTree->Write();
       fMetaTree->Write();
+      fGENIETree->Write();
       fOutFile->Close();
     }
 
@@ -501,6 +665,7 @@ namespace caf {
       fFlatFile->cd();
       fFlatTree->Write();
       fMetaTree->Write();
+      fGENIETree->Write();
       fFlatFile->Close();
     }
   }

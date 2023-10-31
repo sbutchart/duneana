@@ -48,6 +48,7 @@ dunefd_cafmaker:
     FidVolCut:	             3.0
     NuECut:                  0.8
     NuMuCut:                 0.8
+    PandoraNuVertexModuleLabel: "pandora"
     generated_systematic_provider_configuration: @local::generated_systematic_provider_configuration
 }
 

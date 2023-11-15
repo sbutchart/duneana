@@ -60,6 +60,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
+#include "larsim/Utils/TruthMatchUtils.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Cluster.h"
@@ -82,6 +83,8 @@
 #include "duneopdet/OpticalDetector/OpFlashSort.h"
 
 #include "lardata/ArtDataHelper/MVAReader.h"
+
+#include "nusimdata/SimulationBase/GTruth.h"
 
 #include <cstddef> // std::ptrdiff_t
 #include <cstring> // std::memcpy()
@@ -260,7 +263,8 @@ namespace dune {
       TrackData_t<Float_t> trkmommsllhd;   // track momentum from multiple scattering LLHD method
       TrackData_t<Short_t> trksvtxid;     // Vertex ID associated with the track start
       TrackData_t<Short_t> trkevtxid;     // Vertex ID associated with the track end
-      PlaneData_t<Int_t> trkpidpdg;       // particle PID pdg code
+      PlaneData_t<Int_t> trkpidpdg;       // [deprecated] particle PID pdg code
+      PlaneData_t<Int_t> trkpidndf;       // Particle PID ndf based on valid hits
       PlaneData_t<Float_t> trkpidchi;
       PlaneData_t<Float_t> trkpidchipr;   // particle PID chisq for proton
       PlaneData_t<Float_t> trkpidchika;   // particle PID chisq for kaon
@@ -642,6 +646,7 @@ namespace dune {
     Int_t     nuPDG_truth[kMaxTruth];     //neutrino PDG code
     Int_t     ccnc_truth[kMaxTruth];      //0=CC 1=NC
     Int_t     mode_truth[kMaxTruth];      //0=QE/El, 1=RES, 2=DIS, 3=Coherent production
+    Float_t   nuWeight_truth[kMaxTruth];     //neutrino weight from generator
     Float_t  enu_truth[kMaxTruth];       //true neutrino energy
     Float_t  Q2_truth[kMaxTruth];        //Momentum transfer squared
     Float_t  W_truth[kMaxTruth];         //hadronic invariant mass
@@ -1227,7 +1232,7 @@ namespace dune {
   private:
 
     void   HitsPurity(detinfo::DetectorClocksData const& clockData,
-                      std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, double& maxe);
+                      std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, Float_t& compleness, std::map<Int_t,Int_t> HitsToMCCounts);
     double length(const recob::Track& track);
     double driftedLength(detinfo::DetectorPropertiesData const& detProp,
                          const simb::MCParticle& part, TLorentzVector& start, TLorentzVector& end, unsigned int &starti, unsigned int &endi);
@@ -1248,6 +1253,7 @@ namespace dune {
     std::string fDigitModuleLabel;
     std::string fHitsModuleLabel;
     std::string fLArG4ModuleLabel;
+    std::string fSimChannelLabel;
     std::string fCalDataModuleLabel;
     std::string fGenieGenModuleLabel;
     std::string fCryGenModuleLabel;
@@ -1293,6 +1299,8 @@ namespace dune {
     bool fSavePFParticleInfo; ///whether to extract and save PFParticle information
     bool fSaveSpacePointSolverInfo; ///whether to extract and save SpacePointSolver information
     bool fSaveCnnInfo; ///whether to extract and save CNN information
+    
+    bool fRollUpUnsavedIDs; //whether to squash energy deposits for non-saved G4 particles (e.g. shower secondaries) its saved ancestor particle
 
     std::vector<std::string> fCosmicTaggerAssocLabel;
     std::vector<std::string> fContainmentTaggerAssocLabel;
@@ -1341,8 +1349,8 @@ namespace dune {
         fData->SetBits(AnalysisTreeDataStruct::tdVertex, !fSaveVertexInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdAuxDet, !fSaveAuxDetInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdPFParticle, !fSavePFParticleInfo);
-  fData->SetBits(AnalysisTreeDataStruct::tdSpacePoint, !fSaveSpacePointSolverInfo);
-  fData->SetBits(AnalysisTreeDataStruct::tdCnn, !fSaveCnnInfo);
+        fData->SetBits(AnalysisTreeDataStruct::tdSpacePoint, !fSaveSpacePointSolverInfo);
+        fData->SetBits(AnalysisTreeDataStruct::tdCnn, !fSaveCnnInfo);
       }
       else {
         fData->SetTrackers(GetNTrackers());
@@ -1434,14 +1442,16 @@ namespace dune {
     void FillShower(
                     AnalysisTreeDataStruct::ShowerDataStruct& showerData,
                     size_t iShower, recob::Shower const& showers, const bool fSavePFParticleInfo,
-            const std::map<Short_t, Short_t> &showerIDtoPFParticleIDMap
+            const std::map<Short_t, Short_t> &showerIDtoPFParticleIDMap,
+            const art::FindManyP<recob::PFParticle> fpfp
                     ) const;
 
     /// Stores the information of all showers into showerData
     void FillShowers(
                      AnalysisTreeDataStruct::ShowerDataStruct& showerData,
                      std::vector<recob::Shower> const& showers, const bool fSavePFParticleInfo,
-             const std::map<Short_t, Short_t> &showerIDtoPFParticleIDMap
+             const std::map<Short_t, Short_t> &showerIDtoPFParticleIDMap,
+             const art::FindManyP<recob::PFParticle> fpfp
                      ) const;
 
   }; // class dune::AnalysisTree
@@ -1520,6 +1530,7 @@ void dune::AnalysisTreeDataStruct::TrackDataStruct::Resize(size_t nTracks)
   trkevtxid.resize(MaxTracks);
   // PID variables
   trkpidpdg.resize(MaxTracks);
+  trkpidndf.resize(MaxTracks);
   trkpidchi.resize(MaxTracks);
   trkpidchipr.resize(MaxTracks);
   trkpidchika.resize(MaxTracks);
@@ -1634,6 +1645,7 @@ void dune::AnalysisTreeDataStruct::TrackDataStruct::Clear() {
     FillWith(trkxyz[iTrk], 0.);
 
     FillWith(trkpidpdg[iTrk]    , -1);
+    FillWith(trkpidndf[iTrk]    , -9999);
     FillWith(trkpidchi[iTrk]    , -99999.);
     FillWith(trkpidchipr[iTrk]  , -99999.);
     FillWith(trkpidchika[iTrk]  , -99999.);
@@ -1847,6 +1859,9 @@ void dune::AnalysisTreeDataStruct::TrackDataStruct::SetAddresses(
 
   BranchName = "trkpidpdg_" + TrackLabel;
   CreateBranch(BranchName, trkpidpdg, BranchName + NTracksIndexStr + "[3]/I");
+
+  BranchName = "trkpidndf_" + TrackLabel;
+  CreateBranch(BranchName, trkpidndf, BranchName + NTracksIndexStr + "[3]/I");
 
   BranchName = "trkpidchi_" + TrackLabel;
   CreateBranch(BranchName, trkpidchi, BranchName + NTracksIndexStr + "[3]/F");
@@ -2349,6 +2364,7 @@ void dune::AnalysisTreeDataStruct::ClearLocalData() {
   std::fill(nuPDG_truth, nuPDG_truth + sizeof(nuPDG_truth)/sizeof(nuPDG_truth[0]), -99999.);
   std::fill(ccnc_truth, ccnc_truth + sizeof(ccnc_truth)/sizeof(ccnc_truth[0]), -99999.);
   std::fill(mode_truth, mode_truth + sizeof(mode_truth)/sizeof(mode_truth[0]), -99999.);
+  std::fill(nuWeight_truth, nuWeight_truth + sizeof(nuWeight_truth)/sizeof(nuWeight_truth[0]), 1.);
   std::fill(enu_truth, enu_truth + sizeof(enu_truth)/sizeof(enu_truth[0]), -99999.);
   std::fill(Q2_truth, Q2_truth + sizeof(Q2_truth)/sizeof(Q2_truth[0]), -99999.);
   std::fill(W_truth, W_truth + sizeof(W_truth)/sizeof(W_truth[0]), -99999.);
@@ -3008,6 +3024,7 @@ void dune::AnalysisTreeDataStruct::SetAddresses(
     CreateBranch("nuPDG_truth",nuPDG_truth,"nuPDG_truth[mcevts_truth]/I");
     CreateBranch("ccnc_truth",ccnc_truth,"ccnc_truth[mcevts_truth]/I");
     CreateBranch("mode_truth",mode_truth,"mode_truth[mcevts_truth]/I");
+    CreateBranch("nuWeight_truth",nuWeight_truth,"nuWeight_truth[mcevts_truth]/F");
     CreateBranch("enu_truth",enu_truth,"enu_truth[mcevts_truth]/F");
     CreateBranch("Q2_truth",Q2_truth,"Q2_truth[mcevts_truth]/F");
     CreateBranch("W_truth",W_truth,"W_truth[mcevts_truth]/F");
@@ -3330,6 +3347,7 @@ dune::AnalysisTree::AnalysisTree(fhicl::ParameterSet const& pset) :
   fDigitModuleLabel         (pset.get< std::string >("DigitModuleLabel")        ),
   fHitsModuleLabel          (pset.get< std::string >("HitsModuleLabel")         ),
   fLArG4ModuleLabel         (pset.get< std::string >("LArGeantModuleLabel")     ),
+  fSimChannelLabel          (pset.get< std::string >("SimChannelLabel")     ),
   fCalDataModuleLabel       (pset.get< std::string >("CalDataModuleLabel")      ),
   fGenieGenModuleLabel      (pset.get< std::string >("GenieGenModuleLabel")     ),
   fCryGenModuleLabel        (pset.get< std::string >("CryGenModuleLabel")       ),
@@ -3374,6 +3392,7 @@ dune::AnalysisTree::AnalysisTree(fhicl::ParameterSet const& pset) :
   fSavePFParticleInfo	    (pset.get< bool >("SavePFParticleInfo", false)),
   fSaveSpacePointSolverInfo (pset.get< bool >("SaveSpacePointSolverInfo", false)),
   fSaveCnnInfo              (pset.get< bool >("SaveCnnInfo", false)),
+  fRollUpUnsavedIDs              (pset.get< bool >("RollUpUnsavedIDs", true)),
   fCosmicTaggerAssocLabel  (pset.get<std::vector< std::string > >("CosmicTaggerAssocLabel") ),
   fContainmentTaggerAssocLabel  (pset.get<std::vector< std::string > >("ContainmentTaggerAssocLabel") ),
   fFlashMatchAssocLabel (pset.get<std::vector< std::string > >("FlashMatchAssocLabel") ),
@@ -3828,7 +3847,7 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
 
   std::vector<const sim::SimChannel*> fSimChannels;
   if (isMC && fSaveGeantInfo)
-    evt.getView(fLArG4ModuleLabel, fSimChannels);
+    evt.getView(fSimChannelLabel, fSimChannels);
 
   fData->run = evt.run();
   fData->subrun = evt.subRun();
@@ -4233,12 +4252,12 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
     // Get a PFParticle-to-track map.
     lar_pandora::TrackVector allPfParticleTracks;
     lar_pandora::PFParticlesToTracks pfParticleToTrackMap;
-    lar_pandora::LArPandoraHelper::CollectTracks(evt, fPFParticleModuleLabel, allPfParticleTracks, pfParticleToTrackMap);
+    lar_pandora::LArPandoraHelper::CollectTracks(evt, fTrackModuleLabel[0], allPfParticleTracks, pfParticleToTrackMap);
 
     // Get a PFParticle-to-shower map.
     lar_pandora::ShowerVector allPfParticleShowers;
     lar_pandora::PFParticlesToShowers pfParticleToShowerMap;
-    lar_pandora::LArPandoraHelper::CollectShowers(evt, fPFParticleModuleLabel, allPfParticleShowers, pfParticleToShowerMap);
+    lar_pandora::LArPandoraHelper::CollectShowers(evt, fShowerModuleLabel[0], allPfParticleShowers, pfParticleToShowerMap);
 
     for (size_t i = 0; i < NPFParticles && i < PFParticleData.GetMaxPFParticles() ; ++i){
       PFParticleData.pfp_selfID[i] = pfparticlelist[i]->Self();
@@ -4251,7 +4270,9 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
       // Set the daughter IDs.
       std::vector<size_t> daughterIDs = pfparticlelist[i]->Daughters();
 
-      for (size_t j = 0; j < daughterIDs.size(); ++j)
+      if (daughterIDs.size() > kMaxNDaughtersPerPFP)
+        std::cerr << "Warning: there were " << daughterIDs.size() << " reconstructed PFParticle daughters; only the first " << kMaxNDaughtersPerPFP << " being stored in tree" << std::endl;
+      for (size_t j = 0; j < std::min(daughterIDs.size(), (size_t)kMaxNDaughtersPerPFP); ++j)
         PFParticleData.pfp_daughterIDs[i][j] = daughterIDs[j];
 
       // Set the vertex ID.
@@ -4272,25 +4293,27 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
 
       if (lar_pandora::LArPandoraHelper::IsTrack(pfparticlelist[i])){
         PFParticleData.pfp_isTrack[i] = 1;
-
-        // Set the track ID.
-        auto trackMapIter = pfParticleToTrackMap.find(pfparticlelist[i]);
-        if (trackMapIter != pfParticleToTrackMap.end()) {
-            lar_pandora::TrackVector pfParticleTracks = trackMapIter->second;
-
-            if (pfParticleTracks.size() > 1)
-              std::cerr << "Warning: there was more than one track found for PFParticle with ID " << pfparticlelist[i]->Self() << std::endl;
-
-            if (pfParticleTracks.size() > 0) {
-              PFParticleData.pfp_trackID[i] = pfParticleTracks.at(0)->ID();
-              trackIDtoPFParticleIDMap.insert(std::make_pair(pfParticleTracks.at(0)->ID(), pfparticlelist[i]->Self()));
-            }
-        }
-        else
-          std::cerr << "Warning: there was no track found for track-like PFParticle with ID " << pfparticlelist[i]->Self() << std::endl;
       }
       else
         PFParticleData.pfp_isTrack[i] = 0;
+
+      // Set the track ID.
+      auto trackMapIter = pfParticleToTrackMap.find(pfparticlelist[i]);
+      if (trackMapIter != pfParticleToTrackMap.end()) {
+          lar_pandora::TrackVector pfParticleTracks = trackMapIter->second;
+
+          if (pfParticleTracks.size() > 1)
+            std::cerr << "Warning: there was more than one track found for PFParticle with ID " << pfparticlelist[i]->Self() << std::endl;
+
+          if (pfParticleTracks.size() > 0) {
+            PFParticleData.pfp_trackID[i] = pfParticleTracks.at(0)->ID();
+            trackIDtoPFParticleIDMap.insert(std::make_pair(pfParticleTracks.at(0)->ID(), pfparticlelist[i]->Self()));
+          }
+      }
+      else
+      {
+        std::cerr << "Warning: there was no track found for track-like PFParticle with ID " << pfparticlelist[i]->Self() << std::endl;
+      }
 
       if (lar_pandora::LArPandoraHelper::IsShower(pfparticlelist[i])) {
         PFParticleData.pfp_isShower[i] = 1;
@@ -4319,7 +4342,9 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
           lar_pandora::ClusterVector pfParticleClusters = clusterMapIter->second;
           PFParticleData.pfp_numClusters[i] = pfParticleClusters.size();
 
-          for (size_t j = 0; j < pfParticleClusters.size(); ++j)
+          if (pfParticleClusters.size() > kMaxNClustersPerPFP)
+            std::cerr << "Warning: there were " << pfParticleClusters.size() << " reconstructed PFParticle clusters; only the first " << kMaxNClustersPerPFP << " being stored in tree" << std::endl;
+          for (size_t j = 0; j < std::min(pfParticleClusters.size(), (size_t)kMaxNClustersPerPFP); ++j)
             PFParticleData.pfp_clusterIDs[i][j] = pfParticleClusters[j]->ID();
       }
       //else
@@ -4337,7 +4362,10 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
       art::Handle< std::vector<recob::Shower> > showerHandle = showerListHandle[iShowerAlgo];
 
       if (pShowers){
-        FillShowers(ShowerData, *pShowers, fSavePFParticleInfo, showerIDtoPFParticleIDMap);
+
+        art::FindManyP<recob::PFParticle> fpfp(showerHandle,evt,fShowerModuleLabel[0]);
+        FillShowers(ShowerData, *pShowers, fSavePFParticleInfo, showerIDtoPFParticleIDMap, fpfp);
+
 
         if(fMVAPIDShowerModuleLabel[iShowerAlgo].size()){
           art::FindOneP<anab::MVAPIDResult> fmvapid(showerHandle, evt, fMVAPIDShowerModuleLabel[iShowerAlgo]);
@@ -4360,6 +4388,22 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
 
   //track information for multiple trackers
   if (fSaveTrackInfo) {
+
+    // Computing hit to MC association before enter the loop in each track
+    // This is used for the compleness of tracks
+    std::map<int,int> HitsToMCCounts;
+    std::vector<std::map<int,int>> HitsToMCCounts_Planes(kNplanes);
+    if(isMC){
+      for(size_t i = 0; i < hitlist.size(); i++)
+      {
+        TruthMatchUtils::G4ID hitID(TruthMatchUtils::TrueParticleID(clockData, hitlist.at(i), fRollUpUnsavedIDs));
+        ++HitsToMCCounts[hitID];
+        if (hitlist.at(i)->WireID().Plane < kNplanes){
+          ++HitsToMCCounts_Planes[hitlist.at(i)->WireID().Plane][hitID];
+        }
+      }
+    }
+
     for (unsigned int iTracker=0; iTracker < NTrackers; ++iTracker){
       AnalysisTreeDataStruct::TrackDataStruct& TrackerData = fData->GetTrackerData(iTracker);
 
@@ -4559,33 +4603,43 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
            }*/
 
         // find particle ID info
-        /*
-        // Note from Jake Calcutt: There has been a breaking change in the definition
-        // of the anab::ParticleID class. If you are using this class and want this info
-        // in this tree, these must be updated
+        // This was updated to gather the Chi2 information for each particle with the new definitions of anab::ParticleID class. It was previously commented by Jake Calcutt
         art::FindMany<anab::ParticleID> fmpid(trackListHandle[iTracker], evt, fParticleIDModuleLabel[iTracker]);
         if(fmpid.isValid()) {
           std::vector<const anab::ParticleID*> pids = fmpid.at(iTrk);
-          //if(pids.size() > 1) {
-          //mf::LogError("AnalysisTree:limits")
-          //<< "the " << fTrackModuleLabel[iTracker] << " track #" << iTrk
-          //<< " has " << pids.size()
-          //<< " set of ParticleID variables. Only one stored in the tree";
-          //}
+
           for (size_t ipid = 0; ipid < pids.size(); ++ipid){
             if (!pids[ipid]->PlaneID().isValid) continue;
             int planenum = pids[ipid]->PlaneID().Plane;
             if (planenum<0||planenum>2) continue;
-            TrackerData.trkpidpdg[iTrk][planenum] = pids[ipid]->Pdg();
-            TrackerData.trkpidchi[iTrk][planenum] = pids[ipid]->MinChi2();
-            TrackerData.trkpidchipr[iTrk][planenum] = pids[ipid]->Chi2Proton();
-            TrackerData.trkpidchika[iTrk][planenum] = pids[ipid]->Chi2Kaon();
-            TrackerData.trkpidchipi[iTrk][planenum] = pids[ipid]->Chi2Pion();
-            TrackerData.trkpidchimu[iTrk][planenum] = pids[ipid]->Chi2Muon();
-            TrackerData.trkpidpida[iTrk][planenum] = pids[ipid]->PIDA();
+
+            auto pidScore = pids[ipid]->ParticleIDAlgScores();
+            for(auto pScore: pidScore){
+              double chi2value = pScore.fValue;
+
+              // PIDA is always the last one and ndf there is -9999
+              if(pScore.fAssumedPdg != 0) TrackerData.trkpidndf[iTrk][planenum] = pScore.fNdf; // This value is the same for each particle type, but different in each plane
+              switch(pScore.fAssumedPdg){
+                case 2212:
+                  TrackerData.trkpidchipr[iTrk][planenum] = chi2value;
+                  break;
+                case 321:
+                  TrackerData.trkpidchika[iTrk][planenum] = chi2value;
+                  break;
+                case 211:
+                  TrackerData.trkpidchipi[iTrk][planenum] = chi2value;
+                  break;
+                case 13:
+                  TrackerData.trkpidchimu[iTrk][planenum] = chi2value;
+                  break;
+                case 0:
+                  TrackerData.trkpidpida[iTrk][planenum] = chi2value;
+                  break;
+              }
+            }
           }
         } // fmpid.isValid()
-        */
+
         if(fMVAPIDTrackModuleLabel[iTracker].size()){
           art::FindOneP<anab::MVAPIDResult> fmvapid(trackListHandle[iTracker], evt, fMVAPIDTrackModuleLabel[iTracker]);
           if(fmvapid.isValid()) {
@@ -4660,51 +4714,31 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
           std::vector< art::Ptr<recob::Hit> > hits[kNplanes];
 
           for(size_t ah = 0; ah < allHits.size(); ++ah){
-            if (/* allHits[ah]->WireID().Plane >= 0 && */ // always true
-                allHits[ah]->WireID().Plane <  3){
+            if (allHits[ah]->WireID().Plane < kNplanes){
               hits[allHits[ah]->WireID().Plane].push_back(allHits[ah]);
             }
           }
-          for (size_t ipl = 0; ipl < 3; ++ipl){
-            double maxe = 0;
-            HitsPurity(clockData, hits[ipl],TrackerData.trkidtruth[iTrk][ipl],TrackerData.trkpurtruth[iTrk][ipl],maxe);
-            //std::cout<<"\n"<<iTracker<<"\t"<<iTrk<<"\t"<<ipl<<"\t"<<trkidtruth[iTracker][iTrk][ipl]<<"\t"<<trkpurtruth[iTracker][iTrk][ipl]<<"\t"<<maxe;
+
+
+          // Computes g4 id corresponding to track using TruthMatchUtils for each plane
+          for (size_t ipl = 0; ipl < kNplanes; ++ipl){
+            HitsPurity(clockData, hits[ipl], TrackerData.trkidtruth[iTrk][ipl],TrackerData.trkpurtruth[iTrk][ipl], TrackerData.trkefftruth[iTrk][ipl], HitsToMCCounts_Planes[ipl]);
             if (TrackerData.trkidtruth[iTrk][ipl]>0){
               const art::Ptr<simb::MCTruth> mc = pi_serv->TrackIdToMCTruth_P(TrackerData.trkidtruth[iTrk][ipl]);
               TrackerData.trkorigin[iTrk][ipl] = mc->Origin();
               const simb::MCParticle *particle = pi_serv->TrackIdToParticle_P(TrackerData.trkidtruth[iTrk][ipl]);
-              double tote = 0;
               const std::vector<const sim::IDE*> vide=bt_serv->TrackIdToSimIDEs_Ps(TrackerData.trkidtruth[iTrk][ipl]);
-              for (auto ide: vide) {
-                tote += ide->energy;
-              }
               TrackerData.trkpdgtruth[iTrk][ipl] = particle->PdgCode();
-              TrackerData.trkefftruth[iTrk][ipl] = maxe/(tote/kNplanes); //tote include both induction and collection energies
-              //std::cout<<"\n"<<trkpdgtruth[iTracker][iTrk][ipl]<<"\t"<<trkefftruth[iTracker][iTrk][ipl];
             }
           }
 
-          double maxe = 0;
-          HitsPurity(clockData, allHits,TrackerData.trkg4id[iTrk],TrackerData.trkpurity[iTrk],maxe);
+          // Computes g4 id corresponding to track using TruthMatchUtils
+          HitsPurity(clockData, allHits,TrackerData.trkg4id[iTrk],TrackerData.trkpurity[iTrk], TrackerData.trkcompleteness[iTrk], HitsToMCCounts);
           if (TrackerData.trkg4id[iTrk]>0){
             const art::Ptr<simb::MCTruth> mc = pi_serv->TrackIdToMCTruth_P(TrackerData.trkg4id[iTrk]);
             TrackerData.trkorig[iTrk] = mc->Origin();
           }
-          if (!allHits.empty() and allHits[0]) {
-            float totenergy = 0.;
-            auto const& all_hits = allHits[0].parentAs<std::vector>();
-            for(recob::Hit const& hit : all_hits) {
-                std::vector<sim::IDE*> ides;
-                //bt_serv->HitToSimIDEs(hit,ides);
-                std::vector<sim::TrackIDE> eveIDs = bt_serv->HitToEveTrackIDEs(clockData, hit);
 
-                for(size_t e = 0; e < eveIDs.size(); ++e){
-                  //std::cout<<h<<" "<<e<<" "<<eveIDs[e].trackID<<" "<<eveIDs[e].energy<<" "<<eveIDs[e].energyFrac<<std::endl;
-                  if (eveIDs[e].trackID==TrackerData.trkg4id[iTrk]) totenergy += eveIDs[e].energy;
-                }
-            }
-            if (totenergy) TrackerData.trkcompleteness[iTrk] = maxe/totenergy;
-          }
         }//end if (isMC)
       }//end loop over track
     }//end loop over track module labels
@@ -4859,6 +4893,11 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
               fData->lep_dcosz_truth[neutrino_i] = mclist[iList]->GetNeutrino().Lepton().Pz()/mclist[iList]->GetNeutrino().Lepton().P();
             }
 
+            auto gt = evt.getHandle< std::vector<simb::GTruth> >("generator");
+            if ( gt ){
+              auto gtruth = (*gt)[0];
+              fData->nuWeight_truth[neutrino_i] = gtruth.fweight;;
+            }
             //flux information
             //
             // Double-check that a simb::MCFlux object is associated with the
@@ -5358,10 +5397,13 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
 
 void dune::AnalysisTree::FillShower( AnalysisTreeDataStruct::ShowerDataStruct& showerData, size_t iShower,
                                      recob::Shower const& shower, const bool fSavePFParticleInfo,
-                                     const std::map<Short_t, Short_t> &showerIDtoPFParticleIDMap
+                                     const std::map<Short_t, Short_t> &showerIDtoPFParticleIDMap,
+                                     const art::FindManyP<recob::PFParticle> fpfp
                                      ) const {
 
-  showerData.showerID[iShower]        = shower.ID();
+
+
+  showerData.showerID[iShower]        = iShower;
   showerData.shwr_bestplane[iShower]  = shower.best_plane();
   showerData.shwr_length[iShower]     = shower.Length();
 
@@ -5376,14 +5418,22 @@ void dune::AnalysisTree::FillShower( AnalysisTreeDataStruct::ShowerDataStruct& s
   showerData.shwr_startz[iShower]     = pos_start.Z();
 
   if (fSavePFParticleInfo) {
-    auto mapIter = showerIDtoPFParticleIDMap.find(shower.ID());
-    if (mapIter != showerIDtoPFParticleIDMap.end()) {
-      // This vertex has a corresponding PFParticle.
-      showerData.shwr_hasPFParticle[iShower] = 1;
-      showerData.shwr_PFParticleID[iShower] = mapIter->second;
+    if(!fpfp.isValid())
+    {
+      auto mapIter = showerIDtoPFParticleIDMap.find(shower.ID());
+      if (mapIter != showerIDtoPFParticleIDMap.end()) {
+        // This vertex has a corresponding PFParticle.
+        showerData.shwr_hasPFParticle[iShower] = 1;
+        showerData.shwr_PFParticleID[iShower] = mapIter->second;
+      }
+      else
+        showerData.shwr_hasPFParticle[iShower] = 0;
     }
-    else
-      showerData.shwr_hasPFParticle[iShower] = 0;
+    else{
+      auto pfp = fpfp.at(iShower);
+      showerData.shwr_hasPFParticle[iShower] = 1;
+      showerData.shwr_PFParticleID[iShower] = pfp[0]->Self();
+    }
   }
 
   if (shower.Energy().size() == kNplanes)
@@ -5401,7 +5451,8 @@ void dune::AnalysisTree::FillShower( AnalysisTreeDataStruct::ShowerDataStruct& s
 
 void dune::AnalysisTree::FillShowers( AnalysisTreeDataStruct::ShowerDataStruct& showerData,
                                       std::vector<recob::Shower> const& showers, const bool fSavePFParticleInfo,
-                                      const std::map<Short_t, Short_t> &showerIDtoPFParticleIDMap
+                                      const std::map<Short_t, Short_t> &showerIDtoPFParticleIDMap,
+                                      const art::FindManyP<recob::PFParticle> fpfp
                                       ) const {
 
   const size_t NShowers = showers.size();
@@ -5434,50 +5485,43 @@ void dune::AnalysisTree::FillShowers( AnalysisTreeDataStruct::ShowerDataStruct& 
   showerData.nshowers = (Short_t) NShowers;
 
   // set all the showers one by one
-  for (size_t i = 0; i < NShowers; ++i) FillShower(showerData, i, showers[i], fSavePFParticleInfo, showerIDtoPFParticleIDMap);
+  for (size_t i = 0; i < NShowers; ++i)FillShower(showerData, i, showers[i], fSavePFParticleInfo, showerIDtoPFParticleIDMap,fpfp);
 
 } // dune::AnalysisTree::FillShowers()
 
 
 
 void dune::AnalysisTree::HitsPurity(detinfo::DetectorClocksData const& clockData,
-                                    std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, double& maxe){
+                                    std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, Float_t& completeness, std::map<Int_t,Int_t> HitsToMCCounts){
 
   trackid = -1;
   purity = -1;
+  completeness = -1;
 
-  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+  TruthMatchUtils::G4ID g4ID(TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, hits,fRollUpUnsavedIDs));
 
-  std::map<int,double> trkide;
+  if (TruthMatchUtils::Valid(g4ID)){
+    trackid = g4ID;
 
-  for(size_t h = 0; h < hits.size(); ++h){
+    Float_t correct_hits(0.f); // (for complenetess) Count number of hits from the MCParticle with g4ID
 
-    art::Ptr<recob::Hit> hit = hits[h];
-    std::vector<sim::IDE> ides;
-    //bt_serv->HitToSimIDEs(hit,ides);
-    std::vector<sim::TrackIDE> eveIDs = bt_serv->HitToEveTrackIDEs(clockData, hit);
-
-    for(size_t e = 0; e < eveIDs.size(); ++e){
-      //std::cout<<h<<" "<<e<<" "<<eveIDs[e].trackID<<" "<<eveIDs[e].energy<<" "<<eveIDs[e].energyFrac<<std::endl;
-      trkide[eveIDs[e].trackID] += eveIDs[e].energy;
+    // Compute purity using TruthMatchUtils
+    for(size_t i = 0; i < hits.size(); ++i)
+    {
+      TruthMatchUtils::G4ID hitID(TruthMatchUtils::TrueParticleID(clockData, hits.at(i), fRollUpUnsavedIDs));
+      if (hitID == g4ID)
+      {
+        purity+=1.f;
+        correct_hits+=1.f;
+      }
     }
-  }
+    if (hits.size() > 0)
+      purity /= hits.size();
 
-  maxe = -1;
-  double tote = 0;
-  for (std::map<int,double>::iterator ii = trkide.begin(); ii!=trkide.end(); ++ii){
-    tote += ii->second;
-    if ((ii->second)>maxe){
-      maxe = ii->second;
-      trackid = ii->first;
-    }
-  }
-
-  //std::cout << "the total energy of this reco track is: " << tote << std::endl;
-
-  if (tote>0){
-    purity = maxe/tote;
-  }
+    // Compute completeness using TruthMatchUtils counts
+    auto allhitstruth = HitsToMCCounts.find(g4ID)->second;
+    completeness = correct_hits/allhitstruth;
+  }   
 }
 
 // Calculate distance to boundary.

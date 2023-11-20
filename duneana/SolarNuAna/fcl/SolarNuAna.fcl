@@ -127,6 +127,7 @@ solar_nu_ana_vd.ParticleLabelVector:  [
   "CryostatNGammasAtLAr1x8x14",
   "CavernNGammasAtLAr1x8x14"]
 
+solar_nu_ana_vd.Geometry:                "VD"
 solar_nu_ana_vd.DetectorSizeY:           1500 
 
 solar_nu_ana_vd.ClusterAlgoTime:         15
@@ -138,7 +139,7 @@ solar_nu_ana_vd.ClusterInd0MatchTime:    0
 solar_nu_ana_vd.ClusterPreselectionNHit: 0
 
 solar_nu_ana_vd.AdjClusterTime:          2000       # Time window to search for adj. clusters in [tick] units.
-solar_nu_ana_vd.AdjClusterRad:           200.         # Radius to search for adj. clusters in [cm] units.
+solar_nu_ana_vd.AdjClusterRad:           200.       # Radius to search for adj. clusters in [cm] units.
 
 solar_nu_ana_vd.AdjOpFlashTime:          8500
 solar_nu_ana_vd.AdjOpFlashRad:           200.

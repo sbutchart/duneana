@@ -425,7 +425,8 @@ void LowEAna::analyze(art::Event const & evt){
     
     // Calculate the total PE of the flash and the time of the ophit with the highest PE 
     double OpHitTotPE = 0; double MaxHitPE = 0;
-    float OpHitT, OpHitPE;
+    float OpHitT  = 0; 
+    float OpHitPE = 0;
     for (int j = 0; j < int(MOpHits.size()); j++){
       recob::OpHit OpHit = *MOpHits[j];
       OpHitTotPE += OpHit.PE();

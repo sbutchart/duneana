@@ -92,7 +92,7 @@ private:
   TTree* fMCTruthTree;
   std::string MGenLabel;
   int Event,Flag,MNHit,MGen,MTPC,MInd0TPC,MInd1TPC,MInd0NHits,MInd1NHits,MMainID,MMainT,MMainPDG,MMainParentPDG,OpFlashNum;
-  float TNuQSqr,TNuE,TNuP,TNuX,TNuY,TNuZ,avX,avY,avZ,MTime,MCharge,MMaxCharge,MInd0Charge,MInd1Charge,MInd0MaxCharge,MInd1MaxCharge,MInd0dT,MInd1dT,MInd0RecoY,MInd1RecoY,MRecZ,MPur,MMainE,MMainP,MMainParentE,MMainParentP,MMainParentT;
+  float TNuQSqr,TNuE,TNuP,TNuX,TNuY,TNuZ,avX,avY,avZ,MTime,MCharge,MMaxCharge,MInd0Charge,MInd1Charge,MInd0MaxCharge,MInd1MaxCharge,MInd0dT,MInd1dT,MInd0RecoY,MInd1RecoY,MRecY,MRecZ,MPur,MMainE,MMainP,MMainParentE,MMainParentP,MMainParentT;
   std::vector<int> MAdjClGen,MAdjClMainID,TPart,MarleyPDGList,MarleyIDList,MarleyParentIDList,MAdjClMainPDG,HitNum,ClusterNum;
   std::vector<float> MAdjClTime,MAdjClCharge,MAdjClInd0Charge,MAdjClInd1Charge,MAdjClMaxCharge,MAdjClInd0MaxCharge,MAdjClInd1MaxCharge,MAdjClNHit,MAdjClInd0NHit,MAdjClInd1NHit,MAdjClRecoY,MAdjClRecoZ,MAdjClR,MAdjClPur,MAdjClMainE,MAdjClMainX,MAdjClMainY,MAdjClMainZ,MMarleyFrac,MGenFrac;
   std::vector<float> MAdjFlashTime,MAdjFlashPE,MAdjFlashNHit,MAdjFlashMaxPE,MAdjFlashRecoY,MAdjFlashRecoZ,MAdjFlashR,MAdjFlashPur;
@@ -227,6 +227,7 @@ void SolarNuAna::beginJob(){
   fSolarNuAnaTree -> Branch("Ind1Charge",       &MInd1Charge,      "Ind1Charge/F");    // Main cluster ind1 MaxHit
   fSolarNuAnaTree -> Branch("Ind0MaxCharge",    &MInd0MaxCharge,   "Ind0MaxCharge/F"); // Main cluster ind0 MaxHit
   fSolarNuAnaTree -> Branch("Ind1MaxCharge",    &MInd1MaxCharge,   "Ind1MaxCharge/F"); // Main cluster ind1 MaxHit
+  fSolarNuAnaTree -> Branch("RecoY",            &MRecY,            "RecoY/F");         // Main cluster ind0 reco Y [cm]
   fSolarNuAnaTree -> Branch("Ind0RecoY",        &MInd0RecoY,       "Ind0RecoY/F");     // Main cluster ind0 reco Y [cm]
   fSolarNuAnaTree -> Branch("Ind1RecoY",        &MInd1RecoY,       "Ind1RecoY/F");     // Main cluster ind1 reco Y [cm]
   fSolarNuAnaTree -> Branch("MainID",           &MMainID,          "MainID/I");        // Main cluster main track ID
@@ -842,6 +843,7 @@ void SolarNuAna::analyze(art::Event const & evt)
       MInd0RecoY =     MVecInd0RecoY[i];   
       MInd1RecoY =     MVecInd1RecoY[i];   
       MMainID =        MVecMainID[i];
+      MRecY =          MVecRecY[i];
       MRecZ =          MVecRecZ[i];   
       MPur =           MVecPur[i];
       MGen =           MVecGen[i];

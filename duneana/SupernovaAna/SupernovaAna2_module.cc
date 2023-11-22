@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 // Class:       SupernovaAna
 // Module Type: analyzer
 // File:        SupernovaAna_module.cc
@@ -13,6 +13,7 @@
 #include "TCanvas.h"
 #include "TTree.h"
 #include "TH1F.h"
+#include "TH2F.h"
 #include "TTimeStamp.h"
 
 // Framework includes
@@ -84,12 +85,16 @@ private:
   bool firstEv;
   uint64_t firstEvTime; 
   std::vector< std::string > labels; 
-
+  
+  //what information we want to read in from the events
   struct data {
     std::string                 label;
     std::vector <double>        E;
     std::vector <std::uint64_t> Time;
     std::vector <double>        SNTime;
+    std::vector <double>        XPosn;
+    std::vector <double>        YPosn;
+    std::vector <double>        ZPosn;
   };
   std::vector < data > all_data;
 
@@ -158,8 +163,66 @@ void SupernovaAna2::endJob()
       EnergyC->SaveAs(name.str().c_str());
       delete EnergyC; delete Energy;
     }
+  
+  
+   // PosX
+    if (data_label.XPosn.size() > 0) {
+      TCanvas *PosXC;
+      TH2F *PosX;
+      std::stringstream name;
+      name << data_label.label << "_posX";
+      PosXC = new TCanvas (name.str().c_str(), "", 1024, 768);
+      PosX = new TH2F (name.str().c_str(), "", 100, -400, 400, 100, -700, 700);
 
-    // Time
+      // fill data
+      for (int i = 0; i < (int)data_label.YPosn.size(); i++) {
+      PosX->Fill(data_label.XPosn[i], data_label.YPosn[i]);
+      }
+
+      // plot and save
+      PosXC->cd();
+      std::stringstream title;
+      title << "Position XY: " << data_label.label;
+      PosX->SetTitle(title.str().c_str());
+      PosX->GetXaxis()->SetTitle("X position");
+      PosX->GetYaxis()->SetTitle("Y position");
+      PosX->Draw("COLZP");
+      name << ".png";
+      PosXC->SaveAs(name.str().c_str());
+      delete PosXC; delete PosX;
+    }
+
+
+   //PosZ
+    if (data_label.ZPosn.size() > 0) {
+      TCanvas *PosZC;
+      TH2F *PosZ;
+      std::stringstream name;
+      name << data_label.label << "_posZ";
+      PosZC = new TCanvas (name.str().c_str(), "", 1024, 768);
+      PosZ = new TH2F (name.str().c_str(), "", 100, -400, 1500, 100, -700, 700);
+
+    //fill data
+    for (int i = 0; i < (int)data_label.YPosn.size(); i++) {
+    PosZ->Fill(data_label.ZPosn[i], data_label.YPosn[i]);
+    }
+
+    //plot and save
+    PosZC->cd();
+    std::stringstream title; 
+    title << "Position ZY: " << data_label.label;
+    PosZ->SetTitle(title.str().c_str());
+    PosZ->GetXaxis()->SetTitle("Z position");
+    PosZ->GetYaxis()->SetTitle("Y position");
+    PosZ->Draw("COLZP");
+    name << ".png";
+    PosZC->SaveAs(name.str().c_str());
+    delete PosZC; delete PosZ;
+  }
+
+
+
+   // Time
     if (data_label.Time.size() > 0) {
       // prep plot
       TCanvas *TimeC;
@@ -167,12 +230,16 @@ void SupernovaAna2::endJob()
       std::stringstream name;
       name << data_label.label << "_time";
       TimeC = new TCanvas (name.str().c_str(), "", 1024, 768); 
-      const auto [min, max] = std::minmax_element(begin(data_label.Time), end(data_label.Time));
-      const auto scale = 0.1*(*max - *min);
-      Time = new TH1F (name.str().c_str(), "", 100, *min-scale, *max+scale);
+      //const auto [min, max] = std::minmax_element(begin(data_label.Time), end(data_label.Time));
+      //const auto scale = 0.1*(*max - *min);
+      //Time = new TH1F (name.str().c_str(), "", 100, *min-scale, *max+scale);
+      Time = new TH1F (name.str().c_str(), "", 100, -10, 1500000000000);
+
       // fill data
       for (auto & time : data_label.Time) {
-        Time->Fill( time );
+        if (time < 1500000000000) {
+          Time->Fill( time );
+        }
       }
       // plot and save
       TimeC->cd();
@@ -264,6 +331,11 @@ void SupernovaAna2::analyze(art::Event const & e)
                 if (data_label.label == label) {
                   data_label.E.push_back( eventLabel->at(i).GetParticle(j).E() - eventLabel->at(i).GetParticle(j).Mass() );
                   data_label.Time.push_back( e.time().value() + static_cast<uint64_t>(eventLabel->at(i).GetParticle(j).T()) - firstEvTime );
+                   // if (j==0) {
+                  data_label.XPosn.push_back ( eventLabel->at(i).GetParticle(j).Vx());
+                  data_label.YPosn.push_back ( eventLabel->at(i).GetParticle(j).Vy());
+                  data_label.ZPosn.push_back ( eventLabel->at(i).GetParticle(j).Vz());
+                   // }
                 }
               }
             }
@@ -306,6 +378,9 @@ void SupernovaAna2::analyze(art::Event const & e)
                   const simb::MCParticle ThisPar = (*Assn.at(L1).at(L2));
                   data_label.E.push_back( ThisPar.E() - ThisPar.Mass() );
                   data_label.Time.push_back( e.time().value() + static_cast<uint64_t>(ThisPar.T()) - firstEvTime );
+                  data_label.XPosn.push_back ( ThisPar.Vx());
+                  data_label.YPosn.push_back ( ThisPar.Vy());
+                  data_label.ZPosn.push_back ( ThisPar.Vz());
                 }
               }
             }

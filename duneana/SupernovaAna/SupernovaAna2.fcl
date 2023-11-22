@@ -6,7 +6,7 @@ standard_supernovaana:
   #====================
   TruthLabel:		"generator"	# a string with the process label for the module that made the MCTruth objects
   HitLabel:		"gaushit"	# a string with the process label for the module that made the Hit objects
-  GenOnly: false
+  GenOnly: true
 }
 
 END_PROLOG

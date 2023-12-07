@@ -133,6 +133,12 @@ void SupernovaAna2::endJob()
     std::cout << data_label.label << " " << data_label.E.size() << std::endl;
   }
 
+  art::ServiceHandle<art::TFileService> tfs;
+  TTree* fEnergies;
+  TTree* fXPosns;
+  fEnergies = tfs->make<TTree>("Energies", "Energy plots");
+  fXPosns = tfs->make<TTree>("XY_positions", "XY positions");
+
   // Make plots here
   for (auto & data_label : all_data) {
 
@@ -159,7 +165,9 @@ void SupernovaAna2::endJob()
       Energy->GetXaxis()->SetTitle("Energy [GeV]");
       Energy->GetYaxis()->SetTitle("count");
       Energy->Draw();
-      name << ".png";
+      fEnergies->Branch(name.str().c_str(), &Energy, "Energy/I");
+      Energy->Write();
+      name << ".root";
       EnergyC->SaveAs(name.str().c_str());
       delete EnergyC; delete Energy;
     }
@@ -186,7 +194,9 @@ void SupernovaAna2::endJob()
       PosX->SetTitle(title.str().c_str());
       PosX->GetXaxis()->SetTitle("X position");
       PosX->GetYaxis()->SetTitle("Y position");
-      PosX->Draw("COLZP");
+      PosX->SetOption("COLZP");
+      fXPosns->Branch(name.str().c_str(), &PosX, "PosX/I");
+      PosX->Write();
       name << ".png";
       PosXC->SaveAs(name.str().c_str());
       delete PosXC; delete PosX;
@@ -214,7 +224,9 @@ void SupernovaAna2::endJob()
     PosZ->SetTitle(title.str().c_str());
     PosZ->GetXaxis()->SetTitle("Z position");
     PosZ->GetYaxis()->SetTitle("Y position");
-    PosZ->Draw("COLZP");
+    PosZ->SetOption("COLZP");
+    //fSupernovaAnaTree->Branch("PosZ", &PosZ, "PosZ/I");
+    PosZ->Write();
     name << ".png";
     PosZC->SaveAs(name.str().c_str());
     delete PosZC; delete PosZ;
@@ -230,16 +242,16 @@ void SupernovaAna2::endJob()
       std::stringstream name;
       name << data_label.label << "_time";
       TimeC = new TCanvas (name.str().c_str(), "", 1024, 768); 
-      //const auto [min, max] = std::minmax_element(begin(data_label.Time), end(data_label.Time));
-      //const auto scale = 0.1*(*max - *min);
-      //Time = new TH1F (name.str().c_str(), "", 100, *min-scale, *max+scale);
-      Time = new TH1F (name.str().c_str(), "", 100, -10, 1500000000000);
+      //for (auto & time : data_label.Time) { 
+      const auto [min, max] = std::minmax_element(begin(data_label.Time), end(data_label.Time));
+      const auto scale = 0.1*(*max - *min);
+      
+      Time = new TH1F (name.str().c_str(), "", 100, *min-scale, *max+scale);
+      //Time = new TH1F (name.str().c_str(), "", 100, -10, 1500000000000);
 
       // fill data
       for (auto & time : data_label.Time) {
-        if (time < 1500000000000) {
-          Time->Fill( time );
-        }
+        Time->Fill( time );
       }
       // plot and save
       TimeC->cd();
@@ -248,7 +260,7 @@ void SupernovaAna2::endJob()
       Time->SetTitle(title.str().c_str());
       Time->GetXaxis()->SetTitle("Time [ns]");
       Time->GetYaxis()->SetTitle("count");
-      Time->Draw();
+      Time->Write();
       name << ".png";
       TimeC->SaveAs(name.str().c_str());
       delete TimeC; delete Time;
@@ -330,12 +342,16 @@ void SupernovaAna2::analyze(art::Event const & e)
               for (auto & data_label : all_data) {
                 if (data_label.label == label) {
                   data_label.E.push_back( eventLabel->at(i).GetParticle(j).E() - eventLabel->at(i).GetParticle(j).Mass() );
-                  data_label.Time.push_back( e.time().value() + static_cast<uint64_t>(eventLabel->at(i).GetParticle(j).T()) - firstEvTime );
-                   // if (j==0) {
+
+                  //exclude anomalous event times
+                  if (( e.time().value() + static_cast<uint64_t>(eventLabel->at(i).GetParticle(j).T()) - firstEvTime ) < 1500000000000 ) {
+	            data_label.Time.push_back( e.time().value() + static_cast<uint64_t>(eventLabel->at(i).GetParticle(j).T()) - firstEvTime );
+                  }  
+                 
                   data_label.XPosn.push_back ( eventLabel->at(i).GetParticle(j).Vx());
                   data_label.YPosn.push_back ( eventLabel->at(i).GetParticle(j).Vy());
                   data_label.ZPosn.push_back ( eventLabel->at(i).GetParticle(j).Vz());
-                   // }
+  
                 }
               }
             }

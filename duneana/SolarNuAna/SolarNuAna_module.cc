@@ -443,16 +443,19 @@ void SolarNuAna::analyze(art::Event const &evt)
         MarleyZList.push_back((*part)->EndZ());
         MarleyIDList.push_back((*part)->TrackId());
         std::vector<const sim::IDE *> ides = bt_serv->TrackIdToSimIDEs_Ps((*part)->TrackId());
-        if  (fSaveMarleyEDep)
+        if (fSaveMarleyEDep)
         {
-          for (auto const &ide : ides)
+          if ((*part)->PdgCode() == 11 || (*part)->PdgCode() == 22 || (*part)->PdgCode() == 2112)
           {
-            MarleyPDGDepList.push_back((*part)->PdgCode());
-            MarleyEDepList.push_back(ide->energy);
-            MarleyXDepList.push_back(ide->x);
-            MarleyYDepList.push_back(ide->y);
-            MarleyZDepList.push_back(ide->z);
-            MarleyIDDepList.push_back((*part)->TrackId());
+            for (auto const &ide : ides)
+            {
+              MarleyPDGDepList.push_back((*part)->PdgCode());
+              MarleyEDepList.push_back(ide->energy);
+              MarleyXDepList.push_back(ide->x);
+              MarleyYDepList.push_back(ide->y);
+              MarleyZDepList.push_back(ide->z);
+              MarleyIDDepList.push_back((*part)->TrackId());
+            }
           }
         }
         signal_trackids.emplace((*part)->TrackId());
@@ -466,26 +469,26 @@ void SolarNuAna::analyze(art::Event const &evt)
           sNuTruth = sNuTruth + "\n" + fLabels[0] + "\t" + str((*part)->PdgCode()) + "\t" + str((*part)->E()) + "\t\t (" + str((*part)->EndX()) + ", " + str((*part)->EndY()) + ", " + str((*part)->EndZ()) + ")";
         }
 
-        if ((*part)->PdgCode() == 11)
+        if ((*part)->PdgCode() == 11) // Electrons
         {
           const TLorentzVector &v4_f = (*part)->EndPosition();
           x_f = v4_f.X();
           ClPartTrackIDs[0].push_back((*part)->TrackId());
           mf::LogDebug("SolarNuAna") << "\nMC Electron truth position x = " << v4_f.X() << ", y = " << v4_f.Y() << ", z = " << v4_f.Z();
           mf::LogDebug("SolarNuAna") << "Initial KE " << 1e3*(*part)->E() - (*part)->Mass();
-        } // Electrons
-        if ((*part)->PdgCode() == 22)
+        } 
+        if ((*part)->PdgCode() == 22) // Gammas
         {
           ClPartTrackIDs[1].push_back((*part)->TrackId());
-        } // Gammas
-        if ((*part)->PdgCode() == 2112)
+        } 
+        if ((*part)->PdgCode() == 2112) // Neutrons
         {
           ClPartTrackIDs[2].push_back((*part)->TrackId());
-        } // Neutrons
-        if ((*part)->PdgCode() != 11 && (*part)->PdgCode() != 22 && (*part)->PdgCode() != 2112)
+        } 
+        if ((*part)->PdgCode() != 11 && (*part)->PdgCode() != 22 && (*part)->PdgCode() != 2112) // Others
         {
-          ClPartTrackIDs[3].push_back((*part)->TrackId());
-        } // Others
+          ClPartTrackIDs[3].push_back((*part)->TrackId()); 
+        } 
       }
     }
   }

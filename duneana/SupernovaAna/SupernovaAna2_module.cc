@@ -162,6 +162,7 @@ void SupernovaAna2::endJob()
       std::stringstream title;
       title << "Energy: " << data_label.label;
       Energy->SetTitle(title.str().c_str());
+      Energy->SetStats(0); //hide stats box
       Energy->GetXaxis()->SetTitle("Energy [GeV]");
       Energy->GetYaxis()->SetTitle("count");
       Energy->Draw();
@@ -194,6 +195,7 @@ void SupernovaAna2::endJob()
       PosX->SetTitle(title.str().c_str());
       PosX->GetXaxis()->SetTitle("X position");
       PosX->GetYaxis()->SetTitle("Y position");
+      PosX->SetBit(TH1::kNoStats); //hide stats box
       PosX->SetOption("COLZP");
       fXPosns->Branch(name.str().c_str(), &PosX, "PosX/I");
       PosX->Write();
@@ -224,6 +226,7 @@ void SupernovaAna2::endJob()
     PosZ->SetTitle(title.str().c_str());
     PosZ->GetXaxis()->SetTitle("Z position");
     PosZ->GetYaxis()->SetTitle("Y position");
+    PosZ->SetBit(TH1::kNoStats); //hide stats box
     PosZ->SetOption("COLZP");
     //fSupernovaAnaTree->Branch("PosZ", &PosZ, "PosZ/I");
     PosZ->Write();
@@ -260,6 +263,7 @@ void SupernovaAna2::endJob()
       Time->SetTitle(title.str().c_str());
       Time->GetXaxis()->SetTitle("Time [ns]");
       Time->GetYaxis()->SetTitle("count");
+      Time->SetStats(0); //hide stats box   
       Time->Write();
       name << ".png";
       TimeC->SaveAs(name.str().c_str());

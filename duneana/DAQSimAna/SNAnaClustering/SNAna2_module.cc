@@ -717,13 +717,15 @@ void SNAna2::analyze(art::Event const & evt)
         
           int thisMarleyIndex=-1;
           int MainTrID=Hit_True_MainTrID.at(colHitCount);
-          if(ThisPType==type_map[fMARLLabel] && MainTrID!=0){
-            auto const it=trkIDToMarleyIndex.find(MainTrID);
-            if(it==trkIDToMarleyIndex.end()){
-              mf::LogDebug(fname) << "Track ID " << MainTrID << " is not in Marley index map" << std::endl;
-            }
-            else{
-              thisMarleyIndex=it->second;
+          if (type_map.count(fMARLLabel) != 0) {
+            if(ThisPType==type_map[fMARLLabel] && MainTrID!=0){
+              auto const it=trkIDToMarleyIndex.find(MainTrID);
+              if(it==trkIDToMarleyIndex.end()){
+                mf::LogDebug(fname) << "Track ID " << MainTrID << " is not in Marley index map" << std::endl;
+              }
+              else{
+                thisMarleyIndex=it->second;
+              }
             }
           }
           Hit_True_MarleyIndex.push_back(thisMarleyIndex);
@@ -803,14 +805,16 @@ void SNAna2::analyze(art::Event const & evt)
           PDS_OpHit_True_TrackID.push_back(vec_tracksdp[0].trackID);
           gen = WhichParType(vec_tracksdp[0].trackID);
           PDS_OpHit_True_GenType.push_back(gen);
-          int thisMarleyIndex;
-          if(gen==type_map[fMARLLabel] && MainTrID!=0){
-            auto const it=trkIDToMarleyIndex.find(MainTrID);
-            if(it==trkIDToMarleyIndex.end()){
-              mf::LogDebug(fname) << "Track ID " << MainTrID << " is not in Marley index map" << std::endl;
-            }
-            else{
-              thisMarleyIndex=it->second;
+          int thisMarleyIndex = -1;
+          if (type_map.count(fMARLLabel) != 0) {
+            if(gen==type_map[fMARLLabel] && MainTrID!=0){
+              auto const it=trkIDToMarleyIndex.find(MainTrID);
+              if(it==trkIDToMarleyIndex.end()){
+                mf::LogDebug(fname) << "Track ID " << MainTrID << " is not in Marley index map" << std::endl;
+              }
+              else{
+                thisMarleyIndex=it->second;
+              }
             }
           }
           PDS_OpHit_True_Index  .push_back(thisMarleyIndex);

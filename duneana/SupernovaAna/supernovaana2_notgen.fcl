@@ -1,0 +1,51 @@
+BEGIN_PROLOG
+
+standard_supernovaana:
+{
+  module_type:          SupernovaAna2
+  #====================
+  TruthLabel:           "generator"     # a string with the process label for the module that made the MCTruth objects
+  HitLabel:             "gaushit"       # a string with the process label for the module that made the Hit objects
+  GenOnly: false
+}
+
+END_PROLOG
+
+
+
+#include "services_dune.fcl"
+
+process_name: SupernovaAna
+
+source:
+{
+  module_type: RootInput
+  maxEvents:  -1      # Number of events to create
+}
+
+services:
+{
+  TFileService: { fileName: "SupernovaAna_hist.root" }
+  TimeTracker:       {}
+  RandomNumberGenerator: {} #ART native random number generator
+  @table::dunefd_services
+}
+
+services.Geometry: @local::dune10kt_1x2x6_v5_refactored_geo
+
+services.PhotonBackTrackerService:      @erase
+
+
+
+physics:
+{
+  analyzers:
+  {
+    supernovaana:     @local::standard_supernovaana
+  }
+
+  ana: [ supernovaana ]
+  end_paths: [ ana ]
+
+}
+

@@ -38,6 +38,7 @@
 #include "dunereco/CVN/func/InteractionType.h"
 #include "dunereco/CVN/func/Result.h"
 #include "dunereco/RegCNN/func/RegCNNResult.h"
+#include "dunereco/FDSensOpt/FDSensOptData/AngularRecoOutput.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Vertex.h"
@@ -315,9 +316,10 @@ namespace caf {
       inter.genVersion.push_back(std::stoi(s.substr(last)));
 
       //TODO: Ask to implement a map in the StandardRecord to put everything there
-      if(genInfo.generatorConfig.find("tune") != genInfo.generatorConfig.end()){
-        inter.genConfigString = genInfo.generatorConfig.at("tune");
-      }
+      // CURRENTLY DISABLED genConfigString FIELD
+      // if(genInfo.generatorConfig.find("tune") != genInfo.generatorConfig.end()){
+      //   inter.genConfigString = genInfo.generatorConfig.at("tune");
+      // }
 
       inter.nproton = 0;
       inter.nneutron = 0;
@@ -410,7 +412,7 @@ namespace caf {
         }
 
         SRDirectionBranch &dir = reco.dir;
-        FillDirectionInfo(dir);
+        FillDirectionInfo(dir, evt);
 
 
         //Neutrino flavours hypotheses

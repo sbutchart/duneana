@@ -44,6 +44,8 @@ dunefd_cafmaker:
     GenieGenModuleLabel:     "generator"
     POTModuleLabel:          "generator"
     FlashModuleLabel:        "opflash"
+    DirectionRecoLabelNue:   ""
+    DirectionRecoLabelNumu:  ""
     CalorimetryAlg:          @local::dune10kt_calorimetryalgmc
     FidVolCut:	             3.0
     NuECut:                  0.8

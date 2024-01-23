@@ -42,7 +42,7 @@
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Vertex.h"
-// #include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/Geometry.h"
 
 
 // dunerw stuff
@@ -142,8 +142,8 @@ namespace caf {
     fMVASelectNumuLabel = pset.get<std::string>("MVASelectNumuLabel");
     fCVNLabel = pset.get<std::string>("CVNLabel");
     fRegCNNLabel = pset.get<std::string>("RegCNNLabel");
-    fDirectionRecoLabelNue = pset.get<std::string>("DirectionRecoLabelNue");
-    fDirectionRecoLabelNumu = pset.get<std::string>("DirectionRecoLabelNumu");
+    fDirectionRecoLabelNue = pset.get<std::string>("DirectionRecoLabelNue", "");
+    fDirectionRecoLabelNumu = pset.get<std::string>("DirectionRecoLabelNumu", "");
 
     fEnergyRecoNueLabel = pset.get<std::string>("EnergyRecoNueLabel");
     fEnergyRecoNumuLabel = pset.get<std::string>("EnergyRecoNumuLabel");
@@ -428,8 +428,8 @@ namespace caf {
         SRRecoParticlesBranch &part = reco.part;
         FillRecoParticlesInfo(part, evt);
 
-        //TODO, not sure of what to put there............
-        // std::vector<std::size_t>    truth;              ///< Indices of SRTrueInteraction(s), if relevant (use this index in SRTruthBranch::nu to get them)
+        reco.truth = {0}; //Assuming a single TrueInteraction for now
+        //TODO, not sure of what to put there..
         // std::vector<float>   truthOverlap;              ///< Fractional overlap between this reco interaction and each true interaction
 
         pandora.emplace_back(reco);
@@ -471,7 +471,7 @@ namespace caf {
 
   void CAFMaker::FillBeamInfo(caf::SRBeamBranch &beam, const art::Event &evt) const
   {
-    //TODO
+    //TODO: See how to retrieve these info
     beam.ismc = true; //Hardcoded to true at the moment.
   }
 
@@ -526,14 +526,14 @@ namespace caf {
       std::cout << "Warning: No AngularRecoOutput found with label '" << fDirectionRecoLabelNumu << "'" << std::endl;
     }
 
-    dirReco = evt.getHandle<dune::AngularRecoOutput>(fDirectionRecoLabelNume);
+    dirReco = evt.getHandle<dune::AngularRecoOutput>(fDirectionRecoLabelNue);
     if(!dirReco.failedToGet()){
       dirBranch.heshw.SetX(dirReco->fRecoDirection.X());
       dirBranch.heshw.SetY(dirReco->fRecoDirection.Y());
       dirBranch.heshw.SetZ(dirReco->fRecoDirection.Z());
     }
     else{
-      std::cout << "Warning: No AngularRecoOutput found with label '" << fDirectionRecoLabelNume << "'" << std::endl;
+      std::cout << "Warning: No AngularRecoOutput found with label '" << fDirectionRecoLabelNue << "'" << std::endl;
     }
   }
 
@@ -548,8 +548,30 @@ namespace caf {
         const std::vector<float>& cnnResults = (*regcnn)[0].fOutput;
         ErecBranch.regcnn = cnnResults[0];
     }
+    else{
+      std::cout << "Warning: " << itag << " does not correspond to a valid RegCNNResult product" << std::endl;
+    }
 
-    //TODO: add the calo and lep_calo methods. Might need to be changed for FD! -> Start some discussion maybe.
+    art::Handle<dune::EnergyRecoOutput> ereconue = evt.getHandle<dune::EnergyRecoOutput>(fEnergyRecoNueLabel);
+    art::Handle<dune::EnergyRecoOutput> ereconumu = evt.getHandle<dune::EnergyRecoOutput>(fEnergyRecoNumuLabel);
+
+
+    if(ereconue.failedToGet()){
+      std::cout << "Warning: " << fEnergyRecoNueLabel << " does not correspond to a valid EnergyRecoOutput product" << std::endl;
+    }
+    else{
+      ErecBranch.calo = ereconue->fNuLorentzVector.E();
+    }
+
+    if(ereconumu.failedToGet()){
+      std::cout << "Warning: " << fEnergyRecoNumuLabel << " does not correspond to a valid EnergyRecoOutput product" << std::endl;
+    }
+    else{
+      ErecBranch.lep_calo = ereconumu->fNuLorentzVector.E();
+    }
+
+        //TODO: See if we could add more fine-grained information here.
+
 
     
   }
@@ -560,7 +582,7 @@ namespace caf {
   {
     lar_pandora::PFParticleVector particleVector;
     lar_pandora::LArPandoraHelper::CollectPFParticles(evt, fPandoraNuVertexModuleLabel, particleVector);
-    int nuID = -1;
+    unsigned int nuID = 999;
     for (unsigned int n = 0; n < particleVector.size(); ++n) {
       const art::Ptr<recob::PFParticle> particle = particleVector.at(n);
       if(particle->IsPrimary()){
@@ -614,17 +636,32 @@ namespace caf {
       fTree->SetBranchAddress("rec", &psr);
     }
 
-    //TODO: Select the right detector to be filled based on the geometry name
     art::ServiceHandle<geo::Geometry const> fGeometry;
     std::string geoName = fGeometry->DetectorName();
 
     std::cout << "Geo name is: " << geoName << std::endl;
 
+    SRDetectorMeta *detector;
+
+    if(geoName.find("dunevd10kt") != std::string::npos){
+      detector = &(sr.meta.fd_vd);
+      std::cout << "Assuming the FD VD detector" << std::endl;
+    }
+    else if (geoName.find("dune10kt") != std::string::npos)
+    {
+      detector = &(sr.meta.fd_hd);
+      std::cout << "Assuming the FD HD detector" << std::endl;
+    }
+    else {
+      std::cout << "Warning: Didn't detect a know geometry. Defaulting to FD HD!" << std::endl;
+      detector = &(sr.meta.fd_hd);
+    }
+    
 
 
-    FillMetaInfo(sr.meta.fd_hd, evt);
-    // std::cout << "Eid -> " << sr.meta.fd_hd.event << std::endl;
-    // std::cout << "Enabled -> " << sr.meta.fd_hd.enabled << std::endl;
+
+    FillMetaInfo(*detector, evt);
+
     FillBeamInfo(sr.beam, evt);
     art::Handle<std::vector<simb::MCTruth>> mct = evt.getHandle< std::vector<simb::MCTruth> >("generator");
     art::Handle<std::vector<simb::GTruth>> gt = evt.getHandle< std::vector<simb::GTruth> >("generator");
@@ -643,53 +680,6 @@ namespace caf {
     //TODO -> Coordinate with sim/reco to see what to put there
     //SRFDBranch
 
-
-    /*
-    auto pidin = evt.getHandle<dunemva::MVASelectPID>(fMVASelectLabel);
-    auto pidinnue = evt.getHandle<dunemva::MVASelectPID>(fMVASelectNueLabel);
-    auto pidinnumu = evt.getHandle<dunemva::MVASelectPID>(fMVASelectNumuLabel);
-    art::InputTag itag1(fCVNLabel, "cvnresult");
-    auto cvnin = evt.getHandle<std::vector<cvn::Result>>(itag1);
-    art::InputTag itag2(fRegCNNLabel, "regcnnresult");
-    auto regcnnin = evt.getHandle<std::vector<cnn::RegCNNResult>>(itag2);
-    auto ereconuein = evt.getHandle<dune::EnergyRecoOutput>(fEnergyRecoNueLabel);
-    auto ereconumuin = evt.getHandle<dune::EnergyRecoOutput>(fEnergyRecoNumuLabel);
-
-    meta_run = sr.run;
-    meta_subrun = sr.subrun;
-
-    if( !pidin.failedToGet() ) {
-      sr.mvaresult = pidin->pid;
-
-      //Fill MVA reco stuff
-      sr.Ev_reco_nue     = ereconuein->fNuLorentzVector.E();
-      sr.RecoLepEnNue    = ereconuein->fLepLorentzVector.E();
-      sr.RecoHadEnNue    = ereconuein->fHadLorentzVector.E();
-      sr.RecoMethodNue   = ereconuein->recoMethodUsed;
-      sr.Ev_reco_numu    = ereconumuin->fNuLorentzVector.E();
-      sr.RecoLepEnNumu   = ereconumuin->fLepLorentzVector.E();
-      sr.RecoHadEnNumu   = ereconumuin->fHadLorentzVector.E();
-      sr.RecoMethodNumu  = ereconumuin->recoMethodUsed;
-      sr.LongestTrackContNumu = ereconumuin->longestTrackContained;
-      sr.TrackMomMethodNumu   = ereconumuin->trackMomMethod;
-    }
-
-    if( !pidinnue.failedToGet() ) {
-      sr.mvanue = pidinnue->pid;
-    }
-
-    if( !pidinnumu.failedToGet() ) {
-      sr.mvanumu = pidinnumu->pid;
-    }
-
-    sr.RegCNNNueE = -1.;  // initializing
-    if(!regcnnin.failedToGet()){
-      if (!regcnnin->empty()){
-        const std::vector<float>& v = (*regcnnin)[0].fOutput;
-        sr.RegCNNNueE = v[0];
-      }
-    }
-    */
     if(fTree){
       fTree->Fill();
     }

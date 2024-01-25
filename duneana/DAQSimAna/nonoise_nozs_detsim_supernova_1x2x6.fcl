@@ -1,0 +1,17 @@
+#include "detsim_1dsimulation_dune10kt_1x2x6.fcl"
+process_name: NoNoiseNoZSDetsim
+
+physics.producers:
+{
+    @table::physics.producers
+    daq:                   @local::dune_detsim
+    tpcrawdecoder:         @erase
+}
+physics.simulate[0]: daq
+
+physics.producers.daq.NoiseOn:     false
+physics.producers.daq.PedestalOn:  false
+physics.producers.daq.SuppressOn: false
+
+services.AdcSuppressService: @local::zsnone
+services.AdcCompressService: @local::cmpreplace

@@ -1,151 +1,73 @@
+#include "generator_labels.fcl"
+
 BEGIN_PROLOG
 
-solar_nu_ana_hd:
-{
-  module_type:		     "SolarNuAna"
-  RawDigitLabel:       "daq"		      # string for the process that made the raw digits
-  HitLabel:		         "hitfd" 	      # string for the process that made the reco hits
-  GEANT4Label:         "largeant"     # The label for the process which ran GEANT4
-  OpFlashLabel:        "opflash"
-  OpHitLabel:          "ophit"
+  solar_nu_ana_hd:
+  {
+    module_type:		     "SolarNuAna"
+    RawDigitLabel:       "daq"		      # string for the process that made the raw digits
+    HitLabel:		         "hitfd" 	      # string for the process that made the reco hits
+    GEANT4Label:         "largeant"     # The label for the process which ran GEANT4
+    OpFlashLabel:        "opflash"
+    OpHitLabel:          "ophit"
 
-  #====================================================================================#
-  # Vector with generator labels for the particles included in the event. IMPORTANT: Keep MARLEY label in the first position!!!
-  ParticleLabelVector: [
-    "marley",
-    "Ar39GenInLAr",
-    "Kr85GenInLAr",
-    "Ar42GenInLAr",
-    "K42From42ArGenInLAr",
-    "Rn222ChainRn222GenInLAr",
-    "Rn222ChainPo218GenInLAr",
-    "Rn222ChainPb214GenInLAr",
-    "Rn222ChainBi214GenInLAr",
-    "Rn222ChainPb210GenInLAr",
-    "Rn220ChainPb212GenInLAr",
-    "K40GenInCPA",
-    "U238ChainGenInCPA",
-    "K42From42ArGenInCPA",
-    "Rn222ChainPo218GenInCPA",
-    "Rn222ChainPb214GenInCPA",
-    "Rn222ChainBi214GenInCPA",
-    "Rn222ChainPb210GenInCPA",
-    "Rn222ChainFromBi210GenInCPA",
-    "Rn220ChainFromPb212GenInCPA",
-    "Co60GenInAPA",
-    "U238ChainGenInAPA",
-    "Th232ChainGenInAPA",
-    "Rn222ChainGenInPDS",
-    "CavernwallGammasAtLAr",
-    "foamGammasAtLAr",
-    "CavernwallNeutronsAtLAr",
-    "CryostatNGammasAtLAr",
-    "CavernNGammasAtLAr"]
+    #====================================================================================#
+    # Vector with generator labels for the particles included in the event. IMPORTANT: Keep MARLEY label in the first position!!!
+    ParticleLabelVector: @local::generator_dune10kt_1x2x6
 
-  Geometry:                "HD"
-  DetectorSizeX:           365          
-  DetectorSizeY:           610          # Dont't change this value for HD unless you know what you are doing!!!
-  
-  ClusterAlgoTime:         10           # Time window to look for plane clusters in [tick] units.
-  ClusterAlgoAdjChannel:   2            # Number of adjacent channels to look for plane clusters.
-  
-  ClusterMatchNHit:        0.75         # DAQ Clusters min. hit requirement.
-  ClusterMatchCharge:      0.50         # Charge fraction to match clusters.
-  ClusterMatchTime:        20.0         # Time window to look for ind. plane clusters in [tick] units.
-  ClusterInd0MatchTime:    0.00         # Goal Time to match clusters in ind. plane 0 in [tick] units. Needs to be calibrated for each geometry!
-  ClusterInd1MatchTime:    0.00         # Goal Time to match clusters in ind. plane 1 in [tick] units. Needs to be calibrated for each geometry!
-  
-  ClusterPreselectionNHit: 2            # Number of hits to match clusters.
+    Geometry:                "HD"
+    DetectorSizeX:           370          # 1 TPC drift (X) length in [cm].
+    DetectorSizeY:           610          # 1 TPC Y length in [cm].
+    DetectorSizeZ:           1400         # 1 TPC Z length in [cm].
+    DetectorDriftTime:       4500         # Don't change this value for HD unless you know what you are doing!!!
+    
+    ClusterAlgoTime:         15           # Time window to look for plane clusters in [tick] units.
+    ClusterAlgoAdjChannel:   2            # Number of adjacent channels to look for plane clusters.
+    
+    ClusterMatchNHit:        0.75         # DAQ Clusters min. hit requirement.
+    ClusterMatchCharge:      0.50         # Charge fraction to match clusters.
+    ClusterMatchTime:        20.0         # Time window to look for ind. plane clusters in [tick] units.
+    ClusterInd0MatchTime:    0.00         # Wirecell seems to have made this obsolete.
+    ClusterInd1MatchTime:    0.00         # Wirecell seems to have made this obsolete.
+    
+    ClusterPreselectionNHit: 2            # Number of hits to match clusters.
 
-  AdjClusterTime:          2000         # Time window to search for adj. clusters in [tick] units.
-  AdjClusterRad:           200.         # Radius to search for adj. clusters in [cm] units.
-  
-  AdjOpFlashTime:          4500         # Time window to look for adjacent flashes in [tick] units should be one full drift length.
-  AdjOpFlashRad:           200.         # Radius to search for adj. OpFlashes reconstructed in [cm] units.
-  AdjOpFlashMaxPECut:      0.50         # Cut on the maximum PE OpHit contribution to the total OpFlash PE (lower limit).
-  AdjOpFlashMinPECut:      20.0         # Cut on the minimum PE OpHit.
-}
+    MinClusterCharge:        10           # Min Charge for adj. clusters in [ADCxTick].
+    AdjClusterRad:           200.         # Radius to search for adj. clusters in [cm] units.
 
-legacy_solar_nu_ana_hd_v2: @local::solar_nu_ana_hd
-legacy_solar_nu_ana_hd_v2.ParticleLabelVector: [
-  "marley",
-  "apa",
-  "neut",
-  "po",
-  "cpa",
-  "ar42",
-  "kr85",
-  "ar39",
-  "rn222"]
+    AdjOpFlashTime:          4500         # Time window to look for adjacent flashes in [tick] units should be one full drift length.
+    AdjOpFlashRad:           200.         # Radius to search for adj. OpFlashes reconstructed in [cm] units.
+    AdjOpFlashMaxPECut:      1.00         # Cut on the maximum PE OpHit contribution to the total OpFlash PE (lower limit).
+    AdjOpFlashMinPECut:      00.0         # Cut on the minimum PE OpHit.
 
-legacy_solar_nu_ana_hd_v4: @local::solar_nu_ana_hd
-legacy_solar_nu_ana_hd_v4.ParticleLabelVector: [
-  "marley",
-  "apaGen",
-  "cNeutronGen",
-  "cpaGen",
-  "ar42Gen",
-  "kr85Gen",
-  "ar39Gen",
-  "rn222Gen",
-  "po210Gen"]
+    SaveMarleyEDep:          false        # Save the energy deposition of the marley energy deposition in the LAr.
+  }
 
-solar_nu_ana_vd: @local::solar_nu_ana_hd
-solar_nu_ana_vd.HitLabel:             "gaushit"
-solar_nu_ana_vd.OpFlashLabel:         "opflash10ppm"
-solar_nu_ana_vd.OpHitLabel:           "ophit10ppm"
-solar_nu_ana_vd.OpDetWaveformLabel:   "opdigi10ppm"
-solar_nu_ana_vd.ParticleLabelVector:  [
-  "marley",
-  "Ar39GenInLAr",
-  "Kr85GenInLAr",
-  "Ar42GenInLAr",
-  "K42From42ArGenInLAr",
-  "Rn222ChainRn222GenInLAr",
-  "Rn222ChainPo218GenInLAr",
-  "Rn222ChainPb214GenInLAr",
-  "Rn222ChainBi214GenInLAr",
-  "Rn222ChainPb210GenInLAr",
-  "Rn220ChainPb212GenInLAr",
-  "K40GenInCathode",
-  "U238ChainGenInCathode",
-  "Th232ChainGenInCathode",
-  "K40GenInAnode",
-  "U238ChainGenInAnode",
-  "Th232ChainGenInAnode",
-  "Rn222ChainGenInPDS",
-  "K42From42ArGenInUpperMesh1x8x14",
-  "Rn222ChainFromPo218GenInUpperMesh1x8x14",
-  "Rn222ChainFromPb214GenInUpperMesh1x8x14",
-  "Rn222ChainFromBi214GenInUpperMesh1x8x14",
-  "Rn222ChainFromPb210GenInUpperMesh1x8x14",
-  "Rn222ChainFromBi210GenInUpperMesh1x8x14",
-  "Rn220ChainFromPb212GenInUpperMesh1x8x14",
-  "CavernwallGammasAtLAr1x8x14",
-  "foamGammasAtLAr1x8x14",
-  "CavernwallNeutronsAtLAr1x8x14",
-  "CryostatNGammasAtLAr1x8x14",
-  "CavernNGammasAtLAr1x8x14"]
+  legacy_solar_nu_ana_hd_v2: @local::solar_nu_ana_hd
+  legacy_solar_nu_ana_hd_v2.ParticleLabelVector: @local::generator_dune10kt_1x2x6_mcc11
 
-solar_nu_ana_vd.Geometry:                "VD"
-solar_nu_ana_vd.DetectorSizeY:           1500 
+  legacy_solar_nu_ana_hd_v4: @local::solar_nu_ana_hd
+  legacy_solar_nu_ana_hd_v4.ParticleLabelVector: @local::generator_dune10kt_1x2x6_legacy
 
-solar_nu_ana_vd.ClusterAlgoTime:         15
-solar_nu_ana_vd.ClusterAlgoAdjChannel:   2
+  solar_nu_ana_vd: @local::solar_nu_ana_hd
+  solar_nu_ana_vd.HitLabel:            "gaushit"
+  solar_nu_ana_vd.OpFlashLabel:        "opflash10ppm"
+  solar_nu_ana_vd.OpHitLabel:          "ophit10ppm"
+  solar_nu_ana_vd.OpDetWaveformLabel:  "opdigi10ppm"
+  solar_nu_ana_vd.ParticleLabelVector: @local::generator_dunevd10kt_1x8x14_3view_30deg
 
-solar_nu_ana_vd.ClusterInd1MatchTime:    0 
-solar_nu_ana_vd.ClusterInd0MatchTime:    0 
+  solar_nu_ana_vd.Geometry:                "VD"
+  solar_nu_ana_vd.DetectorSizeX:           340
+  solar_nu_ana_vd.DetectorSizeY:           680 
+  solar_nu_ana_vd.DetectorSizeZ:           2100
+  solar_nu_ana_vd.DetectorDriftTIme:       8500
 
-solar_nu_ana_vd.ClusterPreselectionNHit: 0
+  solar_nu_ana_vd.AdjOpFlashTime:          8500
+  solar_nu_ana_vd.AdjOpFlashRad:           100.
+  solar_nu_ana_vd.AdjOpFlashMaxPECut:      1
+  solar_nu_ana_vd.AdjOpFlashMinPECut:      0
 
-solar_nu_ana_vd.AdjClusterTime:          2000       # Time window to search for adj. clusters in [tick] units.
-solar_nu_ana_vd.AdjClusterRad:           200.       # Radius to search for adj. clusters in [cm] units.
-
-solar_nu_ana_vd.AdjOpFlashTime:          8500
-solar_nu_ana_vd.AdjOpFlashRad:           200.
-solar_nu_ana_vd.AdjOpFlashMaxPECut:      1
-solar_nu_ana_vd.AdjOpFlashMinPECut:      0
-
-solar_nu_ana_vd_1x8x6: @local::solar_nu_ana_vd
+  solar_nu_ana_vd_1x8x6: @local::solar_nu_ana_vd
+  solar_nu_ana_vd_1x8x6.ParticleLabelVector: @local::generator_dunevd10kt_1x8x6_3view_30deg
 
 END_PROLOG

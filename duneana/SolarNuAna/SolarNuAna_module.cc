@@ -105,7 +105,7 @@ private:
   std::vector<float> MAdjClTime, MAdjClCharge, MAdjClInd0Charge, MAdjClInd1Charge, MAdjClMaxCharge, MAdjClInd0MaxCharge, MAdjClInd1MaxCharge;
   std::vector<float> MAdjClNHit, MAdjClInd0NHit, MAdjClInd1NHit, MAdjClRecoY, MAdjClRecoZ, MAdjClR, MAdjClPur, MAdjClMainE, MAdjClMainX, MAdjClMainY, MAdjClMainZ, MMarleyFrac, MGenFrac;
   std::vector<float> MAdjFlashTime, MAdjFlashPE, MAdjFlashNHit, MAdjFlashMaxPE, MAdjFlashRecoX, MAdjFlashRecoY, MAdjFlashRecoZ, MAdjFlashR, MAdjFlashPur;
-  std::vector<float> MarleyEList, MarleyPList, MarleyXList, MarleyYList, MarleyZList, MarleyMaxEDepList;
+  std::vector<float> MarleyEList, MarleyPList, MarleyEndXList, MarleyEndYList, MarleyEndZList, MarleyMaxEDepList, MarleyMaxEDepXList, MarleyMaxEDepYList, MarleyMaxEDepZList;
   std::vector<double> MTrackStart, MTrackEnd;
   std::vector<double> MMainVertex, MEndVertex, MMainParentVertex;
   std::vector<std::map<int, simb::MCParticle>> Parts = {};
@@ -217,11 +217,14 @@ void SolarNuAna::beginJob()
   fMCTruthTree->Branch("TNuZ", &TNuZ, "TruthNuZ/F");               // True neutrino Z [cm]
   fMCTruthTree->Branch("TMarleyPDG", &MarleyPDGList);              // PDG of marley marticles
   fMCTruthTree->Branch("TMarleyE", &MarleyEList);                  // Energy of marley particles [MeV]
-  fMCTruthTree->Branch("TMarleyMaxEDep", &MarleyMaxEDepList);      // Energy of marley particles [MeV]
   fMCTruthTree->Branch("TMarleyP", &MarleyPList);                  // Momentum of marley particles [MeV]
-  fMCTruthTree->Branch("TMarleyX", &MarleyXList);                  // X of marley particles [cm]
-  fMCTruthTree->Branch("TMarleyY", &MarleyYList);                  // Y of marley particles [cm]
-  fMCTruthTree->Branch("TMarleyZ", &MarleyZList);                  // Z of marley particles [cm]
+  fMCTruthTree->Branch("TMarleyEndX", &MarleyEndXList);               // X of marley particles [cm]
+  fMCTruthTree->Branch("TMarleyEndY", &MarleyEndYList);               // Y of marley particles [cm]
+  fMCTruthTree->Branch("TMarleyEndZ", &MarleyEndZList);               // Z of marley particles [cm]
+  fMCTruthTree->Branch("TMarleyMaxEDep", &MarleyMaxEDepList);      // Energy of marley particles [MeV]
+  fMCTruthTree->Branch("TMarleyX", &MarleyMaxEDepXList);           // X of marley particles [cm]
+  fMCTruthTree->Branch("TMarleyY", &MarleyMaxEDepYList);           // Y of marley particles [cm]
+  fMCTruthTree->Branch("TMarleyZ", &MarleyMaxEDepZList);           // Z of marley particles [cm]
   fMCTruthTree->Branch("TMarleyID", &MarleyIDList);                // TrackID of marley particles
   fMCTruthTree->Branch("TrackNum", &TrackNum, "TrackNum/I");       // Number of PMTracks
   fMCTruthTree->Branch("OpHitNum", &OpHitNum, "OpHitNum/I");       // Number of OpHits
@@ -260,11 +263,14 @@ void SolarNuAna::beginJob()
   fSolarNuAnaTree->Branch("TNuZ", &TNuZ, "TruthNuZ/F");            // True neutrino Z
   fSolarNuAnaTree->Branch("TMarleyPDG", &MarleyPDGList);           // PDG of marley particles
   fSolarNuAnaTree->Branch("TMarleyE", &MarleyEList);               // Energy of marley particles
-  fSolarNuAnaTree->Branch("TMarleyMaxEDep", &MarleyMaxEDepList);   // Max Energy Deposition of marley particles
   fSolarNuAnaTree->Branch("TMarleyP", &MarleyPList);               // Momentum of marley particles
-  fSolarNuAnaTree->Branch("TMarleyX", &MarleyXList);               // X of marley particles
-  fSolarNuAnaTree->Branch("TMarleyY", &MarleyYList);               // Y of marley particles
-  fSolarNuAnaTree->Branch("TMarleyZ", &MarleyZList);               // Z of marley particles
+  fSolarNuAnaTree->Branch("TMarleyEndX", &MarleyEndXList);            // X of marley particles
+  fSolarNuAnaTree->Branch("TMarleyEndY", &MarleyEndYList);            // Y of marley particles
+  fSolarNuAnaTree->Branch("TMarleyEndZ", &MarleyEndZList);            // Z of marley particles
+  fSolarNuAnaTree->Branch("TMarleyMaxEDep", &MarleyMaxEDepList);   // Max Energy Deposition of marley particles
+  fSolarNuAnaTree->Branch("TMarleyX", &MarleyMaxEDepXList);        // Max Energy Deposition X of marley particles
+  fSolarNuAnaTree->Branch("TMarleyY", &MarleyMaxEDepYList);        // Max Energy Deposition Y of marley particles
+  fSolarNuAnaTree->Branch("TMarleyZ", &MarleyMaxEDepZList);        // Max Energy Deposition Z of marley particles
   fSolarNuAnaTree->Branch("TMarleyID", &MarleyIDList);             // TrackID of marley particles")
 
 
@@ -468,18 +474,30 @@ void SolarNuAna::analyze(art::Event const &evt)
         MarleyPDGList.push_back((*part)->PdgCode());
         MarleyEList.push_back(1e3*(*part)->E());
         MarleyPList.push_back(1e3*(*part)->P());
-        MarleyXList.push_back((*part)->EndX());
-        MarleyYList.push_back((*part)->EndY());
-        MarleyZList.push_back((*part)->EndZ());
+        MarleyEndXList.push_back((*part)->EndX());
+        MarleyEndYList.push_back((*part)->EndY());
+        MarleyEndZList.push_back((*part)->EndZ());
         MarleyIDList.push_back((*part)->TrackId());
         std::vector<const sim::IDE *> ides = bt_serv->TrackIdToSimIDEs_Ps((*part)->TrackId());
-        std::map<int, float> MarleyMaxEDepMap;
+        std::map<int, float> MarleyMaxEDepMap, MarleyMaxEDepXMap, MarleyMaxEDepYMap, MarleyMaxEDepZMap;
         if (fSaveMarleyEDep)
         {
           for (auto const &ide : ides)
           {
-            if (InMyMap((*part)->TrackId(), MarleyMaxEDepMap) == false){MarleyMaxEDepMap[(*part)->TrackId()] = ide->energy;};
-            if (ide->energy > MarleyMaxEDepMap[(*part)->TrackId()]){MarleyMaxEDepMap[(*part)->TrackId()] = ide->energy;};
+            if (InMyMap((*part)->TrackId(), MarleyMaxEDepMap) == false)
+            {
+              MarleyMaxEDepMap[(*part)->TrackId()] = ide->energy;
+              MarleyMaxEDepXMap[(*part)->TrackId()] = ide->x;
+              MarleyMaxEDepYMap[(*part)->TrackId()] = ide->y;
+              MarleyMaxEDepZMap[(*part)->TrackId()] = ide->z;
+            }
+            if (ide->energy > MarleyMaxEDepMap[(*part)->TrackId()])
+            {
+              MarleyMaxEDepMap[(*part)->TrackId()] = ide->energy;
+              MarleyMaxEDepXMap[(*part)->TrackId()] = ide->x;
+              MarleyMaxEDepYMap[(*part)->TrackId()] = ide->y;
+              MarleyMaxEDepZMap[(*part)->TrackId()] = ide->z;
+            }
             if ((*part)->PdgCode() == 11 || (*part)->PdgCode() == 22 || (*part)->PdgCode() == 2112)
             {
               MarleyIDDepList.push_back((*part)->TrackId());
@@ -492,6 +510,9 @@ void SolarNuAna::analyze(art::Event const &evt)
           }
         }
         MarleyMaxEDepList.push_back(1e3*MarleyMaxEDepMap[(*part)->TrackId()]);
+        MarleyMaxEDepXList.push_back(MarleyMaxEDepXMap[(*part)->TrackId()]);
+        MarleyMaxEDepYList.push_back(MarleyMaxEDepYMap[(*part)->TrackId()]);
+        MarleyMaxEDepZList.push_back(MarleyMaxEDepZMap[(*part)->TrackId()]);
         SignalTrackIDs.emplace((*part)->TrackId());
 
         if ((*part)->PdgCode() < 1000000)
@@ -572,34 +593,40 @@ void SolarNuAna::analyze(art::Event const &evt)
     recob::OpFlash TheFlash = *OpFlashList[i];
     std::vector<art::Ptr<recob::OpHit>> MatchedHits = OpAssns.at(i);
     mf::LogDebug("SolarNuAna") << "Assigning OpHit to Flash";
-    double TotalFlashPE = 0;
-    double MaxOpHitPE = 0;
-    float OpHitT, OpHitPE;
+    double TotalFlashPE, MaxOpHitPE, FlashTime;
+    TotalFlashPE = MaxOpHitPE = FlashTime = 0;
     for (int j = 0; j < int(MatchedHits.size()); j++)
-    {
+    { // Loop over OpHits in the flash
       recob::OpHit OpHit = *MatchedHits[j];
-      TotalFlashPE += OpHit.PE();
-      OpHitPE = OpHit.PE();
-      if (OpHitPE > MaxOpHitPE)
+      const std::vector< int > ThisOpHitTrackIds = pbt->OpHitToTrackIds(OpHit);
+      float ThisOphitPurity = 0;
+      for (auto const &ThisOpHitTrackId : ThisOpHitTrackIds)
       {
-        MaxOpHitPE = OpHitPE;
-        OpHitT = OpHit.PeakTime();
-      }
+        if (SignalTrackIDs.find(ThisOpHitTrackId) != SignalTrackIDs.end())
+        {
+          ThisOphitPurity += 1;
+        }
+      } 
+      auto OpHitXYZ = geo->OpDetGeoFromOpChannel(OpHit.OpChannel()).GetCenter();
+      SOpHitPur.push_back(ThisOphitPurity/int(ThisOpHitTrackIds.size()));
+      TotalFlashPE += OpHit.PE();
+      FlashTime += OpHit.PeakTime()*OpHit.PE();
+      if (OpHit.PE() > MaxOpHitPE){MaxOpHitPE = OpHit.PE();};
       SOpHitChannel.push_back(OpHit.OpChannel());
       SOpHitT.push_back(OpHit.PeakTime());
       SOpHitPE.push_back(OpHit.PE());
-      auto OpHitXYZ = geo->OpDetGeoFromOpChannel(OpHit.OpChannel()).GetCenter();
       SOpHitX.push_back(OpHitXYZ.X());
       SOpHitY.push_back(OpHitXYZ.Y());
       SOpHitZ.push_back(OpHitXYZ.Z());
       SOpHitFlashID.push_back(i);
-    }
+    } // End of OpHit loop
+    FlashTime = FlashTime / TotalFlashPE;
 
     mf::LogDebug("SolarNuAna") << "Evaluating Flash purity";
     int TerminalOutput = supress_stdout();
     double OpFlashPur = pbt->OpHitCollectionPurity(SignalTrackIDs, MatchedHits);
     resume_stdout(TerminalOutput);
-    mf::LogDebug("SolarNuAna") << "PE of this OpFlash " << TotalFlashPE << " OpFlash time " << OpHitT;
+    mf::LogDebug("SolarNuAna") << "PE of this OpFlash " << TotalFlashPE << " OpFlash time " << FlashTime;
 
     // Calculate the flash purity, only for the Marley events
     if (MaxOpHitPE / TotalFlashPE < fAdjOpFlashMaxPERatioCut && TotalFlashPE > fAdjOpFlashMinPECut)
@@ -1276,10 +1303,10 @@ void SolarNuAna::ResetVariables()
   OpFlashNum = 0;
   MarleyPDGList = {}; MarleyPDGDepList = {};
   MarleyIDList = {}, MarleyIDDepList = {};
-  MarleyEList = {}, MarleyPList = {}, MarleyXList = {}, MarleyYList = {}, MarleyZList = {};
+  MarleyEList = {}, MarleyPList = {}, MarleyEndXList = {}, MarleyEndYList = {}, MarleyEndZList = {};
   MarleyEDepList = {}, MarleyXDepList = {}, MarleyYDepList = {}, MarleyZDepList = {};
   MarleyMaxEDepList = {};
-  SOpHitChannel = {}, SOpHitPE = {}, SOpHitX = {}, SOpHitY = {}, SOpHitZ = {}, SOpHitT = {}, SOpHitFlashID = {};
+  SOpHitChannel = {}, SOpHitPur = {}, SOpHitPE = {}, SOpHitX = {}, SOpHitY = {}, SOpHitZ = {}, SOpHitT = {}, SOpHitFlashID = {};
   TPart = {}, Parts = {};
   HitNum = {};
   ClusterNum = {};

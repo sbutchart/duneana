@@ -39,7 +39,7 @@ BEGIN_PROLOG
     AdjOpFlashTime:          4500         # Time window to look for adjacent flashes in [tick] units should be one full drift length.
     AdjOpFlashY:             200.         # Y distance to search for adj. OpFlashes reconstructed in [cm] units.
     AdjOpFlashZ:             200.         # Z distance to search for adj. OpFlashes reconstructed in [cm] units.
-    AdjOpFlashMaxPECut:      1.00         # Cut on the maximum OpHit PE contribution to the total OpFlash PE.
+    AdjOpFlashMaxPERatioCut: 1.00         # Cut on the maximum OpHit PE contribution to the total OpFlash PE.
     AdjOpFlashMinPECut:      20.0         # Cut on the minimum OpHit PE.
 
     SaveMarleyEDep:          true        # Save the energy deposition of the marley energy deposition in the LAr.

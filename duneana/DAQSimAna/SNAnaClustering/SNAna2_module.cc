@@ -820,6 +820,7 @@ void SNAna2::analyze(art::Event const & evt)
           PDS_OpHit_True_Index  .push_back(thisMarleyIndex);
           PDS_OpHit_True_Energy .push_back(vec_tracksdp[0].energy);
         } else {
+          PDS_OpHit_True_Index.push_back(-1);
           PDS_OpHit_True_TrackID.push_back(-1);
           PDS_OpHit_True_GenType.push_back(type_map["Other"]);
           PDS_OpHit_True_Energy .push_back(-1);

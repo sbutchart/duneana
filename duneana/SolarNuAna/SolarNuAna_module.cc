@@ -86,7 +86,7 @@ private:
   // --- Input settings imported from the fcl
   std::string fGeometry;
   int fDetectorSizeX, fDetectorSizeY, fDetectorSizeZ,fDetectorDriftTime, fClusterAlgoAdjChannel, fClusterInd0MatchTime, fClusterInd1MatchTime, fClusterPreselectionNHit;
-  float fClusterMatchTime, fAdjClusterRad, fMinClusterCharge, fClusterMatchCharge, fAdjOpFlashY, fAdjOpFlashZ, fAdjOpFlashTime, fAdjOpFlashMaxPECut, fAdjOpFlashMinPECut, fClusterMatchNHit, fClusterAlgoTime;
+  float fClusterMatchTime, fAdjClusterRad, fMinClusterCharge, fClusterMatchCharge, fAdjOpFlashY, fAdjOpFlashZ, fAdjOpFlashTime, fAdjOpFlashMaxPERatioCut, fAdjOpFlashMinPECut, fClusterMatchNHit, fClusterAlgoTime;
   std::vector<std::string> fLabels;
   bool fSaveMarleyEDep, fSaveSignalOpHits;
 
@@ -204,6 +204,7 @@ void SolarNuAna::beginJob()
   fConfigTree->Branch("AdjOpFlashMaxPERatioCut", &fAdjOpFlashMaxPERatioCut);
   fConfigTree->Branch("AdjOpFlashMinPECut", &fAdjOpFlashMinPECut);
   fConfigTree->Branch("SaveMarleyEDep", &fSaveMarleyEDep);
+  fConfigTree->Branch("SaveSignalOpHits", &fSaveSignalOpHits);
 
   // MC Truth info.
   fMCTruthTree->Branch("Event", &Event, "Event/I");                // Event number

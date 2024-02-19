@@ -8,8 +8,9 @@ BEGIN_PROLOG
     RawDigitLabel:       "daq"		      # string for the process that made the raw digits
     HitLabel:		         "hitfd" 	      # string for the process that made the reco hits
     GEANT4Label:         "largeant"     # The label for the process which ran GEANT4
-    OpFlashLabel:        "opflash"
-    OpHitLabel:          "ophit"
+    OpFlashLabel:        "opflash"     # The label for the process which ran the OpFlash
+    OpHitLabel:          "ophitspe"     # The label for the process which ran the OpHit
+    TrackLabel:          "pmtracktc"    # The label for the process which ran the PMTrack
 
     #====================================================================================#
     # Vector with generator labels for the particles included in the event. IMPORTANT: Keep MARLEY label in the first position!!!
@@ -24,23 +25,25 @@ BEGIN_PROLOG
     ClusterAlgoTime:         15           # Time window to look for plane clusters in [tick] units.
     ClusterAlgoAdjChannel:   2            # Number of adjacent channels to look for plane clusters.
     
-    ClusterMatchNHit:        0.75         # DAQ Clusters min. hit requirement.
-    ClusterMatchCharge:      0.50         # Charge fraction to match clusters.
+    ClusterMatchNHit:        100.         # DAQ Clusters min. hit requirement.
+    ClusterMatchCharge:      100.         # Charge fraction to match clusters.
     ClusterMatchTime:        20.0         # Time window to look for ind. plane clusters in [tick] units.
     ClusterInd0MatchTime:    0.00         # Wirecell seems to have made this obsolete.
     ClusterInd1MatchTime:    0.00         # Wirecell seems to have made this obsolete.
     
-    ClusterPreselectionNHit: 2            # Number of hits to match clusters.
+    ClusterPreselectionNHit: 0            # Number of hits to match clusters.
 
-    MinClusterCharge:        10           # Min Charge for adj. clusters in [ADCxTick].
-    AdjClusterRad:           200.         # Radius to search for adj. clusters in [cm] units.
+    MinClusterCharge:        0.           # Min Charge for adj. clusters in [ADCxTick].
+    AdjClusterRad:           100.         # Radius to search for adj. clusters in [cm] units.
 
     AdjOpFlashTime:          4500         # Time window to look for adjacent flashes in [tick] units should be one full drift length.
-    AdjOpFlashRad:           200.         # Radius to search for adj. OpFlashes reconstructed in [cm] units.
+    AdjOpFlashY:             200.         # Y distance to search for adj. OpFlashes reconstructed in [cm] units.
+    AdjOpFlashZ:             200.         # Z distance to search for adj. OpFlashes reconstructed in [cm] units.
     AdjOpFlashMaxPECut:      1.00         # Cut on the maximum PE OpHit contribution to the total OpFlash PE (lower limit).
-    AdjOpFlashMinPECut:      00.0         # Cut on the minimum PE OpHit.
+    AdjOpFlashMinPECut:      20.0         # Cut on the minimum PE OpHit.
 
     SaveMarleyEDep:          false        # Save the energy deposition of the marley energy deposition in the LAr.
+    SaveSignalOpHits:        false        # Save the OpHits that are associated with the signal.
   }
 
   legacy_solar_nu_ana_hd_v2: @local::solar_nu_ana_hd
@@ -63,9 +66,6 @@ BEGIN_PROLOG
   solar_nu_ana_vd.DetectorDriftTIme:       8500
 
   solar_nu_ana_vd.AdjOpFlashTime:          8500
-  solar_nu_ana_vd.AdjOpFlashRad:           100.
-  solar_nu_ana_vd.AdjOpFlashMaxPECut:      1
-  solar_nu_ana_vd.AdjOpFlashMinPECut:      0
 
   solar_nu_ana_vd_1x8x6: @local::solar_nu_ana_vd
   solar_nu_ana_vd_1x8x6.ParticleLabelVector: @local::generator_dunevd10kt_1x8x6_3view_30deg

@@ -161,7 +161,7 @@ void SolarNuAna::reconfigure(fhicl::ParameterSet const &p)
   fAdjOpFlashTime = p.get<float>("AdjOpFlashTime");
   fAdjOpFlashY = p.get<float>("AdjOpFlashY");
   fAdjOpFlashZ = p.get<float>("AdjOpFlashZ");
-  fAdjOpFlashMaxPECut = p.get<float>("AdjOpFlashMaxPECut");
+  fAdjOpFlashMaxPERatioCut = p.get<float>("AdjOpFlashMaxPERatioCut");
   fAdjOpFlashMinPECut = p.get<float>("AdjOpFlashMinPECut");
   fSaveMarleyEDep = p.get<bool>("SaveMarleyEDep");
   fSaveSignalOpHits = p.get<bool>("SaveSignalOpHits");
@@ -201,7 +201,7 @@ void SolarNuAna::beginJob()
   fConfigTree->Branch("AdjOpFlashTime", &fAdjOpFlashTime);
   fConfigTree->Branch("AdjOpFlashY", &fAdjOpFlashY);
   fConfigTree->Branch("AdjOpFlashZ", &fAdjOpFlashZ);
-  fConfigTree->Branch("AdjOpFlashMaxPECut", &fAdjOpFlashMaxPECut);
+  fConfigTree->Branch("AdjOpFlashMaxPERatioCut", &fAdjOpFlashMaxPERatioCut);
   fConfigTree->Branch("AdjOpFlashMinPECut", &fAdjOpFlashMinPECut);
   fConfigTree->Branch("SaveMarleyEDep", &fSaveMarleyEDep);
 
@@ -601,7 +601,7 @@ void SolarNuAna::analyze(art::Event const &evt)
     mf::LogDebug("SolarNuAna") << "PE of this OpFlash " << TotalFlashPE << " OpFlash time " << OpHitT;
 
     // Calculate the flash purity, only for the Marley events
-    if (MaxOpHitPE / TotalFlashPE < fAdjOpFlashMaxPECut && TotalFlashPE > fAdjOpFlashMinPECut)
+    if (MaxOpHitPE / TotalFlashPE < fAdjOpFlashMaxPERatioCut && TotalFlashPE > fAdjOpFlashMinPECut)
     {
       OpFlashMarlPur.push_back(OpFlashPur);
       OpFlashMaxPE.push_back(MaxOpHitPE);

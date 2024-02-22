@@ -5,24 +5,23 @@ art_make(BASENAME_ONLY
          larcorealg::Geometry
          lardataobj::RawData
          nusimdata::SimulationBase
-         ART_FRAMEWORK_CORE
-         ART_FRAMEWORK_PRINCIPAL
-         ART_FRAMEWORK_SERVICES_REGISTRY
-         ART_ROOT_IO_TFILE_SUPPORT
+         art::Framework_Core
+         art::Framework_Principal
+         art::Framework_Services_Registry
+         art_root_io::tfile_support
          ROOT::Core
-         ART_ROOT_IO_TFILESERVICE_SERVICE
+         art_root_io::TFileService_service
          art::Persistency_Common
          art::Persistency_Provenance
          art::Utilities 
 	 canvas
-         ART_PERSISTENCY_COMMON
-         ART_PERSISTENCY_PROVENANCE
-         ART_UTILITIES
+         art::Persistency_Common
+         art::Persistency_Provenance
          messagefacility::MF_MessageLogger
          cetlib::cetlib 
 	 cetlib_except
-         ROOT_BASIC_LIB_LIST
-         )
+         ROOT::Core ROOT::Hist ROOT::Tree
+         ) ### MIGRATE-ACTION-RECOMMENDED (migrate-3.22.02) - deprecated: use art_make_library(), art_dictonary(), and cet_build_plugin() with explicit source lists and plugin base types
 
 install_fhicl()
 install_headers()

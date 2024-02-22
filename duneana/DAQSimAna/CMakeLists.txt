@@ -20,20 +20,20 @@ art_make( BASENAME_ONLY MODULE_LIBRARIES
   larsim::Simulation nug4::ParticleNavigation lardataobj_Simulation
   lardata::ArtDataHelper
   nusimdata::SimulationBase	
-  ART_FRAMEWORK_CORE
-  ART_FRAMEWORK_PRINCIPAL
-  ART_FRAMEWORK_SERVICES_REGISTRY
-  ART_ROOT_IO_TFILE_SUPPORT
+  art::Framework_Core
+  art::Framework_Principal
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
   ROOT::Core
-  ART_ROOT_IO_TFILESERVICE_SERVICE
+  art_root_io::TFileService_service
   art::Persistency_Common canvas
   art::Persistency_Provenance canvas
   art::Utilities canvas
   messagefacility::MF_MessageLogger
   cetlib::cetlib cetlib_except
-  ROOT_BASIC_LIB_LIST
+  ROOT::Core ROOT::Hist ROOT::Tree
   EXCLUDE read_packed.cxx TriggerPrimitiveFinderPass1_tool.cc TriggerPrimitiveFinderPass2_tool.cc TriggerPrimitiveFinderTemplate_tool.cc
-  )
+  ) ### MIGRATE-ACTION-RECOMMENDED (migrate-3.22.02) - deprecated: use art_make_library(), art_dictonary(), and cet_build_plugin() with explicit source lists and plugin base types
 
 cet_build_plugin(TriggerPrimitiveFinderPass1 art::tool
   fhiclcpp cetlib::cetlib cetlib_except

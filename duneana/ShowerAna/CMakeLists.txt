@@ -9,12 +9,12 @@ cet_build_plugin(ShowerAnalysis art::module
 			     larsim::MCCheater_BackTrackerService_service
                              larsim::MCCheater_ParticleInventoryService_service
 			     nusimdata::SimulationBase
-                             ART_FRAMEWORK_CORE
-			     ART_FRAMEWORK_PRINCIPAL
-			     ART_FRAMEWORK_SERVICES_REGISTRY
-                             ART_ROOT_IO_TFILE_SUPPORT
+                             art::Framework_Core
+			     art::Framework_Principal
+			     art::Framework_Services_Registry
+                             art_root_io::tfile_support
                              ROOT::Core
-                             ART_ROOT_IO_TFILESERVICE_SERVICE
+                             art_root_io::TFileService_service
  			     art::Persistency_Common 
 			     art::Persistency_Provenance 
 			     art::Utilities 
@@ -22,7 +22,7 @@ cet_build_plugin(ShowerAnalysis art::module
 			     messagefacility::MF_MessageLogger
 			     cetlib::cetlib 
 			     cetlib_except
-			     ROOT_BASIC_LIB_LIST
+			     ROOT::Core ROOT::Hist ROOT::Tree
 )
 
 
@@ -52,7 +52,7 @@ install_scripts()
 # 	 	       ${messagefacility::MF_MessageLogger}
 # 	 	       
 # 	 	       cetlib::cetlib cetlib_except
-# 	 	       ROOT_BASIC_LIB_LIST
+# 	 	       ROOT::Core ROOT::Hist ROOT::Tree
 # 		       ShowerAna
 # )
 

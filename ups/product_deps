@@ -24,8 +24,8 @@ defaultqual e26
 
 product          version
 cetbuildtools	 v8_20_00	-	only_for_build
-dunereco         v09_82_02d01
-duneopdet        v09_82_02d01
+dunereco         v09_83_01d00
+duneopdet        v09_83_01d00
 duneanaobj       v02_04_00a
 larcoreobj       v09_09_01
 end_product_list

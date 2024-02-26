@@ -41,6 +41,7 @@ BEGIN_PROLOG
     "Rn220ChainPb212GenInLAr",
     "K40GenInCPA",
     "U238ChainGenInCPA",
+    "Th232ChainGenInCPA",
     "K42From42ArGenInCPA",
     "Rn222ChainPo218GenInCPA",
     "Rn222ChainPb214GenInCPA",
@@ -52,11 +53,12 @@ BEGIN_PROLOG
     "U238ChainGenInAPA",
     "Th232ChainGenInAPA",
     "Rn222ChainGenInPDS",
-    "CavernwallGammasAtLAr",
-    "foamGammasAtLAr",
-    "CavernwallNeutronsAtLAr",
-    "CryostatNGammasAtLAr",
-    "CavernNGammasAtLAr"
+    "U238Th232K40GenInLArAPAboards",
+    "CavernwallGammasAtLAr1x2x6",
+    "foamGammasAtLAr1x2x6",
+    "CavernwallNeutronsAtLAr1x2x6",
+    "CryostatNGammasAtLAr1x2x6",
+    "CavernNGammasAtLAr1x2x6"
   ]
 
   generator_dunevd10kt_1x8x14_3view_30deg:

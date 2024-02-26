@@ -103,7 +103,7 @@ private:
   std::vector<float> MarleyEDepList, MarleyXDepList, MarleyYDepList, MarleyZDepList;
   std::vector<float> SOpHitPur, SOpHitPE, SOpHitX, SOpHitY, SOpHitZ, SOpHitT, SOpHitChannel, SOpHitFlashID;
   std::vector<float> MAdjClTime, MAdjClCharge, MAdjClInd0Charge, MAdjClInd1Charge, MAdjClMaxCharge, MAdjClInd0MaxCharge, MAdjClInd1MaxCharge;
-  std::vector<float> MAdjClNHit, MAdjClInd0NHit, MAdjClInd1NHit, MAdjClRecoY, MAdjClRecoZ, MAdjClR, MAdjClPur, MAdjClMainE, MAdjClMainX, MAdjClMainY, MAdjClMainZ, MMarleyFrac, MGenFrac;
+  std::vector<float> MAdjClNHit, MAdjClInd0NHit, MAdjClInd1NHit, MAdjClRecoY, MAdjClRecoZ, MAdjClR, MAdjClPur, MAdjClMainE, MAdjClMainX, MAdjClMainY, MAdjClMainZ, MAdjClEndX, MAdjClEndY, MAdjClEndZ, MMarleyFrac, MGenFrac;
   std::vector<float> MAdjFlashTime, MAdjFlashPE, MAdjFlashNHit, MAdjFlashMaxPE, MAdjFlashRecoX, MAdjFlashRecoY, MAdjFlashRecoZ, MAdjFlashR, MAdjFlashPur;
   std::vector<float> MarleyEList, MarleyPList, MarleyEndXList, MarleyEndYList, MarleyEndZList, MarleyMaxEDepList, MarleyMaxEDepXList, MarleyMaxEDepYList, MarleyMaxEDepZList;
   std::vector<double> MTrackStart, MTrackEnd;
@@ -341,6 +341,9 @@ void SolarNuAna::beginJob()
   fSolarNuAnaTree->Branch("AdjClMainX", &MAdjClMainX);                 // Adj. clusters' main X [cm]
   fSolarNuAnaTree->Branch("AdjClMainY", &MAdjClMainY);                 // Adj. clusters' main Y [cm]
   fSolarNuAnaTree->Branch("AdjClMainZ", &MAdjClMainZ);                 // Adj. clusters' main Z [cm]
+  fSolarNuAnaTree->Branch("AdjClEndX", &MAdjClEndX);                   // Adj. clusters' end X [cm]
+  fSolarNuAnaTree->Branch("AdjClEndY", &MAdjClEndY);                   // Adj. clusters' end Y [cm]
+  fSolarNuAnaTree->Branch("AdjClEndZ", &MAdjClEndZ);                   // Adj. clusters' end Z [cm]
 
   // Adj. Flash info.
   fSolarNuAnaTree->Branch("AdjOpFlashTime", &MAdjFlashTime);   // Adj. flash' time [ticks]
@@ -1064,6 +1067,9 @@ void SolarNuAna::analyze(art::Event const &evt)
       MAdjClMainX = {};
       MAdjClMainY = {};
       MAdjClMainZ = {};
+      MAdjClEndX = {};
+      MAdjClEndY = {};
+      MAdjClEndZ = {};
       MAdjFlashTime = {};
       MAdjFlashPE = {};
       MAdjFlashNHit = {};
@@ -1127,6 +1133,9 @@ void SolarNuAna::analyze(art::Event const &evt)
           MAdjClMainX.push_back(-1e6);
           MAdjClMainY.push_back(-1e6);
           MAdjClMainZ.push_back(-1e6);
+          MAdjClEndX.push_back(-1e6);
+          MAdjClEndY.push_back(-1e6);
+          MAdjClEndZ.push_back(-1e6);
         }
         else
         {
@@ -1135,6 +1144,9 @@ void SolarNuAna::analyze(art::Event const &evt)
           MAdjClMainX.push_back(MAdjClTruth->Vx());
           MAdjClMainY.push_back(MAdjClTruth->Vy());
           MAdjClMainZ.push_back(MAdjClTruth->Vz());
+          MAdjClEndX.push_back(MAdjClTruth->EndX());
+          MAdjClEndY.push_back(MAdjClTruth->EndY());
+          MAdjClEndZ.push_back(MAdjClTruth->EndZ());
         }
       }
 

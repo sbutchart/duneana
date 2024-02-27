@@ -247,8 +247,8 @@ defaultqual	e26
 ####################################
 product		version		qual	flags		<table_format=2>
 duneanaobj	v02_04_00a	-
-duneopdet	v09_82_02d01	-
-dunereco	v09_82_02d01	-
+duneopdet	v09_83_01d00	-
+dunereco	v09_83_01d00	-
 larcoreobj	v09_09_01	-
 cetmodules	v3_22_02	-	only_for_build
 end_product_list

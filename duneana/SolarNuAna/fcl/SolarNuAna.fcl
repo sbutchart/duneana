@@ -31,7 +31,8 @@ BEGIN_PROLOG
     ClusterInd0MatchTime:    0.00         # Wirecell seems to have made this obsolete.
     ClusterInd1MatchTime:    0.00         # Wirecell seems to have made this obsolete.
     
-    ClusterPreselectionNHit: 0            # Number of hits to match clusters.
+    ClusterPreselectionNHit: 0            # Min number of hits to preselect a cluster.
+    ClusterPreselectionTrack: false       # If true, the cluster must be associated with a track to be saved.
 
     MinClusterCharge:        0.           # Min Charge for adj. clusters in [ADCxTick].
     AdjClusterRad:           100.         # Radius to search for adj. clusters in [cm] units.

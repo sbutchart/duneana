@@ -28,7 +28,7 @@ art_make( BASENAME_ONLY MODULE_LIBRARIES
   cetlib::cetlib cetlib_except::cetlib_except
   ROOT::Core ROOT::Hist ROOT::Tree
   EXCLUDE read_packed.cxx AbsRunningSumTPFinderPass1_tool.cc
-  ) ### MIGRATE-ACTION-RECOMMENDED (migrate-3.22.02) - deprecated: use art_make_library(), art_dictonary(), and cet_build_plugin() with explicit source lists and plugin base types
+  )
 
 cet_build_plugin(AbsRunningSumTPFinderPass1 art::tool
   fhiclcpp::fhiclcpp cetlib::cetlib cetlib_except::cetlib_except

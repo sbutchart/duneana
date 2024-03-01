@@ -23,7 +23,7 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
   EXTRA_FLAGS -pedantic -Wno-unused-local-typedefs
 )
 
-cet_report_compiler_flags() ### MIGRATE-ACTION-RECOMMENDED (migrate-3.22.02) - add args: REPORT_THRESHOLD VERBOSE
+cet_report_compiler_flags()
 
 find_package( nufinder REQUIRED )
 find_package( larfinder REQUIRED )

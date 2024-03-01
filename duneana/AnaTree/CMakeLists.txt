@@ -19,6 +19,7 @@ art_make( MODULE_LIBRARIES
 	  larpandora::LArPandoraInterface
 	  dunecore::SignalShapingServiceDUNE10kt_service
 	  dunecore::SignalShapingServiceDUNE35t_service
+          duneopdet::OpticalDetector
           nusimdata::SimulationBase
           art::Framework_Core
 	  art::Framework_Principal
@@ -26,12 +27,12 @@ art_make( MODULE_LIBRARIES
 	  art_root_io::tfile_support
 	  ROOT::Core
 	  art_root_io::TFileService_service
-	  art::Persistency_Common canvas
-	  art::Persistency_Provenance canvas
-	  art::Utilities canvas
+	  art::Persistency_Common
+	  art::Persistency_Provenance
+	  art::Utilities canvas::canvas
 	  messagefacility::MF_MessageLogger
 	  fhiclcpp::fhiclcpp
-	  cetlib::cetlib cetlib_except
+	  cetlib::cetlib cetlib_except::cetlib_except
           ROOT::Geom
           ROOT::XMLIO
           ROOT::Gdml

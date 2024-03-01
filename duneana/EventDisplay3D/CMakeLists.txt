@@ -4,18 +4,18 @@ art_make(BASENAME_ONLY
    LIB_LIBRARIES
     ${ROOT_CORE}
     ${ROOT_EVE}
-    cetlib_except
+    cetlib_except::cetlib_except
     cetlib::cetlib 
-    larcorealg_Geometry
-    lardataobj_RawData
-    art::Persistency_Common canvas
+    larcorealg::Geometry
+    lardataob::_RawData
+    art::Persistency_Common canvas::canvas
    SERVICE_LIBRARIES
-    duneana_EventDisplay3D
+    duneana::EventDisplay3D
     ${ART_ROOT_IO_ROOTINPUT_SOURCE}
    MODULE_LIBRARIES
-    nusimdata_SimulationBase
-    larreco_RecoAlg
-    duneana_EventDisplay3D
+    nusimdata::SimulationBase
+    larreco::RecoAlg
+    duneana::EventDisplay3D
     EvtDisplayService_service
 ) ### MIGRATE-ACTION-RECOMMENDED (migrate-3.22.02) - deprecated: use art_make_library(), art_dictonary(), and cet_build_plugin() with explicit source lists and plugin base types
 

@@ -1,5 +1,5 @@
 
-cet_build_plugin(ShowerAnalysis art::module
+cet_build_plugin(ShowerAnalysis art::module LIBRARIES
 			     lardataobj::RawData
 		      	     lardataobj::RecoBase
 		      	     lardata::ArtDataHelper
@@ -18,10 +18,10 @@ cet_build_plugin(ShowerAnalysis art::module
  			     art::Persistency_Common 
 			     art::Persistency_Provenance 
 			     art::Utilities 
-			     canvas
+			     canvas::canvas
 			     messagefacility::MF_MessageLogger
 			     cetlib::cetlib 
-			     cetlib_except
+			     cetlib_except::cetlib_except
 			     ROOT::Core ROOT::Hist ROOT::Tree
 )
 
@@ -46,12 +46,12 @@ install_scripts()
 # 	 	       art::Framework_Services_Registry
 #          	       art_root_io::tfile_support ROOT::Core
 #          	       art_root_io::TFileService_service
-#  	 	       art::Persistency_Common canvas
-# 	 	       art::Persistency_Provenance canvas
-# 	 	       art::Utilities canvas
-# 	 	       ${messagefacility::MF_MessageLogger}
+#  	 	       art::Persistency_Common 
+# 	 	       art::Persistency_Provenance 
+# 	 	       art::Utilities canvas::canvas
+# 	 	       messagefacility::MF_MessageLogger
 # 	 	       
-# 	 	       cetlib::cetlib cetlib_except
+# 	 	       cetlib::cetlib cetlib_except::cetlib_except
 # 	 	       ROOT::Core ROOT::Hist ROOT::Tree
 # 		       ShowerAna
 # )

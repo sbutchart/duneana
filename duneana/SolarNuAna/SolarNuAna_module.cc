@@ -96,9 +96,9 @@ private:
   TTree *fSolarNuAnaTree;
   std::string TNuInteraction;
   bool MPrimary;
-  int Event, Flag, MNHit, MGen, MTPC, MInd0TPC, MInd1TPC, MInd0NHits, MInd1NHits, MMainID, MMainT, MMainPDG, MMainParentPDG, TrackNum, OpHitNum, OpFlashNum;
+  int Event, Flag, MNHit, MGen, MTPC, MInd0TPC, MInd1TPC, MInd0NHits, MInd1NHits, MMainID, MMainT, MMainPDG, MMainParentPDG, TrackNum, OpHitNum, OpFlashNum, MTrackNPoints;
   float TNuE, TNuP, TNuX, TNuY, TNuZ, MTime, MCharge, MMaxCharge, MInd0Charge, MInd1Charge, MInd0MaxCharge, MInd1MaxCharge;
-  float MInd0dT, MInd1dT, MInd0RecoY, MInd1RecoY, MRecY, MRecZ, MPur, MMainE, MMainP, MMainParentE, MMainParentP, MMainParentT;
+  float MInd0dT, MInd1dT, MInd0RecoY, MInd1RecoY, MRecY, MRecZ, MPur, MMainE, MMainP, MMainParentE, MMainParentP, MMainParentT, MTrackChi2;
   std::vector<int> MAdjClGen, MAdjClMainID, TPart, MarleyPDGList, MarleyPDGDepList, MarleyIDList, MarleyMotherList, MarleyIDDepList, MAdjClMainPDG, HitNum, ClusterNum, MarleyElectronDepList;
   std::vector<float> MarleyEDepList, MarleyXDepList, MarleyYDepList, MarleyZDepList;
   std::vector<float> SOpHitPur, SOpHitPE, SOpHitX, SOpHitY, SOpHitZ, SOpHitT, SOpHitChannel, SOpHitFlashID;
@@ -320,8 +320,10 @@ void SolarNuAna::beginJob()
   fSolarNuAnaTree->Branch("MarleyFrac", &MMarleyFrac);                          // Main cluster particle contribution (electron, gamma, neutron)
 
   // Track info.
-  fSolarNuAnaTree->Branch("MTrackStart", &MTrackStart);                // Track start point
-  fSolarNuAnaTree->Branch("MTrackEnd", &MTrackEnd);                    // Track end point
+  fSolarNuAnaTree->Branch("MTrackNPoints", &MTrackNPoints, "TrackNPoints/I");   // Track #points
+  fSolarNuAnaTree->Branch("MTrackStart", &MTrackStart);                         // Track start point
+  fSolarNuAnaTree->Branch("MTrackEnd", &MTrackEnd);                             // Track end point
+  fSolarNuAnaTree->Branch("MTrackChi2", &MTrackChi2);                           // Track chi2
 
   // Adj. Cluster info.
   fSolarNuAnaTree->Branch("AdjClGen", &MAdjClGen);                     // Adj. clusters' generator idx
@@ -449,7 +451,7 @@ void SolarNuAna::analyze(art::Event const &evt)
   //---------------------------------------------------------------------------------------------------------------------------------------------------------------//
   //----------------------------------------------------------------- Some MC Truth information -------------------------------------------------------------------//
   //---------------------------------------------------------------------------------------------------------------------------------------------------------------//
-  std::set<int> SignalTrackIDs;                                   // Signal TrackIDs to be used in OpFlash matching
+  std::set<int> SignalTrackIDs;                                    // Signal TrackIDs to be used in OpFlash matching
   std::vector<std::vector<int>> ClPartTrackIDs = {{}, {}, {}, {}}; // Track IDs corresponding to each kind of MCTruth particle  {11,22,2112,else}
   art::Handle<std::vector<simb::MCTruth>> ThisHandle;
   std::string sNuTruth = "";
@@ -1176,8 +1178,10 @@ void SolarNuAna::analyze(art::Event const &evt)
           // throw away bad tracks
           if ((trk_start - ThisClVertex).Mag() > MaxVertexDistance && (trk_end - ThisClVertex).Mag() > MaxVertexDistance)
             {continue;};
+          MTrackNPoints = trk.NPoints();
           MTrackStart = {trk.Start().X(), trk.Start().Y(), trk.Start().Z()};
           MTrackEnd = {trk.End().X(), trk.End().Y(), trk.End().Z()};
+          MTrackChi2 = trk.Chi2();
           sClusterReco += "*** Matched pmtrack: \n";
           sClusterReco += " - Track has start (" + str(trk.Start().X()) + ", " + str(trk.Start().Y()) + ", " + str(trk.Start().Z()) + ")\n";
           sClusterReco += " - Track has end   (" + str(trk.End().X()) + ", " + str(trk.End().Y()) + ", " + str(trk.End().Z()) + ")\n";
@@ -1324,6 +1328,8 @@ void SolarNuAna::ResetVariables()
   TrackNum = 0;
   OpHitNum = 0;
   OpFlashNum = 0;
+  MTrackNPoints = 0;
+  MTrackChi2 = 0;
   MarleyElectronDepList = {};
   MarleyPDGList = {}; MarleyPDGDepList = {};
   MarleyIDList = {}, MarleyIDDepList = {};

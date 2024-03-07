@@ -133,11 +133,11 @@ services.message.destinations.LogStandardOut.categories.BackTracker.limit: 0
 services.message.destinations.LogStandardError.categories.BackTracker.limit: 0
 
 # Display all the INFO message for SNAna_module
-services.message.destinations.LogStandardOut.categories.SNAna_module.limit:-1
+services.message.destinations.LogStandardOut.categories.SNAna2_module.limit:-1
 
 # If you want to have the mf::LogDebug() messages, uncomment the following:
 # services.message.destinations.LogStandardOut.threshold:"DEBUG"
-# services.message.destinations.LogStandardOut.categories.SNAna_module.limit:-1
+# services.message.destinations.LogStandardOut.categories.SNAna2_module.limit:-1
 # services.message.destinations.LogStandardOut.categories.default.limit:0
 
 

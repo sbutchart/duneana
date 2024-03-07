@@ -6,6 +6,7 @@ BEGIN_PROLOG
 
 trigprimpass1: {
    module_type: "TriggerPrimitiveFinder"
+#   InputTag: "tpcrawdecoder:daq"
    InputTag: "simwire"
    finder: {
       tool_type: "TriggerPrimitiveFinderPass1"

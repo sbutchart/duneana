@@ -474,10 +474,10 @@ void SNAna2::analyze(art::Event const & evt)
       fSNAnaTree->Branch(title.str().c_str(), &count.second, title2.str().c_str() );
     }
 
-    mf::LogInfo(fname) << "Available labels: " << std::endl;
-    for (auto & type : type_map) {       
-      mf::LogInfo(fname) << "label: " << type.first << ", id: " << type.second << std::endl;
-    }
+    //mf::LogInfo(fname) << "Available labels: " << std::endl;
+    //for (auto & type : type_map) {       
+    //  mf::LogInfo(fname) << "label: " << type.first << ", id: " << type.second << std::endl;
+    //}
   }
 
   // Now for each event, get the type, and do work
@@ -698,7 +698,12 @@ void SNAna2::analyze(art::Event const & evt)
 
           Hit_True_EvEnergy.push_back(0);
           Hit_True_MainTrID.push_back(-1);
+
           for (size_t ideL=0; ideL < ThisHitIDE.size(); ++ideL) {
+            mf::LogInfo(fname) << "ThisHitIDE.size(): " << ThisHitIDE.size() << "\n";
+            mf::LogInfo(fname) << "ideL: " << ideL << "\n";
+            mf::LogInfo(fname) << "ThisHitIDE[ideL].trackID: " << ThisHitIDE[ideL].trackID << "\n";
+
             Hit_True_TrackID.push_back(ThisHitIDE[ideL].trackID);
             for (size_t ipart=0; ipart<allTruthParts.size(); ++ipart) {
 
@@ -753,7 +758,8 @@ void SNAna2::analyze(art::Event const & evt)
               }
             }
           }
-
+          //mf::LogInfo(fname) << "PType of hit: " << id_map[ThisPType].c_str() << ".\n";
+          //id_map[ThisPType].c_str() returning incorrectly at this stage
           ColHits[ id_map[ThisPType] ].push_back( ThisHit );
           colHitCount++;
 

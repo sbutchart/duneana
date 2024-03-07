@@ -8,11 +8,6 @@ validatorAna:
   GenieGenModuleLabel: "generator"
   HitsModuleLabel: "gaushit"
   PhotonsLiteModuleLabel: "PDFastSim"
-
-  SaveIonAndScintInfo: true
-  SaveGenieGenInfo: true
-  SaveHitsInfo: true
-  SavePhotonsInfo: true
 }
 
 END_PROLOG

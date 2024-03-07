@@ -116,6 +116,10 @@ private:
   std::string fGenieGenModuleLabel;
   std::string fHitsModuleLabel;
   std::string fPhotonsLiteModuleLabel;
+  bool fSaveIonAndScintInfo; 
+  bool fSaveGenieGenInfo;
+  bool fSaveHitsInfo;
+  bool fSavePhotonsInfo;
 
 };
 
@@ -125,7 +129,11 @@ dune::GenRecoValidator::GenRecoValidator(fhicl::ParameterSet const& p)
   fIonAndScintLabel(p.get<std::string>("IonAndScintLabel")),
   fGenieGenModuleLabel(p.get<std::string>("GenieGenModuleLabel")),
   fHitsModuleLabel(p.get<std::string>("HitsModuleLabel")),
-  fPhotonsLiteModuleLabel(p.get<std::string>("PhotonsLiteModuleLabel"))
+  fPhotonsLiteModuleLabel(p.get<std::string>("PhotonsLiteModuleLabel")),
+  fSaveIonAndScintInfo(p.get<bool>("SaveIonAndScintInfo")),
+  fSaveGenieGenInfo(p.get<bool>("SaveGenieGenInfo")),
+  fSaveHitsInfo(p.get<bool>("SaveHitsInfo")),
+  fSavePhotonsInfo(p.get<bool>("SavePhotonsInfo"))
 
   // More initializers here.
 {
@@ -149,203 +157,211 @@ void dune::GenRecoValidator::analyze(art::Event const& e)
   no_photons = 0;
 
   // Get energy deposit
-  art::ValidHandle<std::vector<sim::SimEnergyDeposit>> simHandle = e.getValidHandle<std::vector<sim::SimEnergyDeposit>>(fIonAndScintLabel);
-  std::vector<art::Ptr<sim::SimEnergyDeposit>> edeplist;
+  if (fSaveIonAndScintInfo){
+    art::ValidHandle<std::vector<sim::SimEnergyDeposit>> simHandle = e.getValidHandle<std::vector<sim::SimEnergyDeposit>>(fIonAndScintLabel);
+    std::vector<art::Ptr<sim::SimEnergyDeposit>> edeplist;
   
-  if (simHandle.isValid())
-    art::fill_ptr_vector(edeplist, simHandle);
+    if (simHandle.isValid())
+      art::fill_ptr_vector(edeplist, simHandle);
   
-  Nstep = edeplist.size();
-  edep.clear();
-  num_photons.clear();
-  num_electrons.clear();
+    Nstep = edeplist.size();
+    edep.clear();
+    num_photons.clear();
+    num_electrons.clear();
   
-  edep.resize(Nstep);
-  num_photons.resize(Nstep);
-  num_electrons.resize(Nstep);
-  
-  for (size_t i=0; i<Nstep; i++)
-  {
-    edep[i]          = edeplist[i]->Energy();
-    num_photons[i]   = edeplist[i]->NumPhotons();
-    num_electrons[i] = edeplist[i]->NumElectrons();
-  }
+    edep.resize(Nstep);
+    num_photons.resize(Nstep);
+    num_electrons.resize(Nstep);
+    
+    for (size_t i=0; i<Nstep; i++)
+    {
+      edep[i]          = edeplist[i]->Energy();
+      num_photons[i]   = edeplist[i]->NumPhotons();
+      num_electrons[i] = edeplist[i]->NumElectrons();
+    }
+  } // end fSaveIonAndScintInfo
 
   // Get MC truth information
-  art::ValidHandle<std::vector<simb::MCTruth>> mctruthHandle = e.getValidHandle<std::vector<simb::MCTruth>>(fGenieGenModuleLabel);
-  std::vector<art::Ptr<simb::MCTruth>> mclist;
+  if (fSaveGenieGenInfo){
+    art::ValidHandle<std::vector<simb::MCTruth>> mctruthHandle = e.getValidHandle<std::vector<simb::MCTruth>>(fGenieGenModuleLabel);
+    std::vector<art::Ptr<simb::MCTruth>> mclist;
   
-  if (mctruthHandle.isValid())
-    art::fill_ptr_vector(mclist, mctruthHandle);
+    if (mctruthHandle.isValid())
+      art::fill_ptr_vector(mclist, mctruthHandle);
   
-  Nmctruth = mclist.size();
-  nuPDG_truth.clear();
-  ccnc_truth.clear();
-  mode_truth.clear();
-  W_truth.clear(); 
-  X_truth.clear(); 
-  Y_truth.clear(); 
-  hitnuc_truth.clear(); 
-  theta_truth.clear(); 
-  enu_truth.clear(); 
-  nuvtxx_truth.clear(); 
-  nuvtxy_truth.clear(); 
-  nuvtxz_truth.clear(); 
-  time_truth.clear(); 
-  nu_dcosx_truth.clear(); 
-  nu_dcosy_truth.clear(); 
-  nu_dcosz_truth.clear(); 
-  zenith_truth.clear(); 
-  azimut_truth.clear(); 
-  beamangleX_truth.clear(); 
-  beamangleY_truth.clear(); 
-  beamangleZ_truth.clear(); 
-  lep_mom_truth.clear(); 
-  lep_dcosx_truth.clear(); 
-  lep_dcosy_truth.clear(); 
-  lep_dcosz_truth.clear(); 
-  nuWeight_truth.clear(); 
-  genie_no_primaries.clear();
-  
-  
-  nuPDG_truth.resize(Nmctruth);
-  ccnc_truth.resize(Nmctruth);
-  mode_truth.resize(Nmctruth);
-  W_truth.resize(Nmctruth); 
-  X_truth.resize(Nmctruth); 
-  Y_truth.resize(Nmctruth); 
-  hitnuc_truth.resize(Nmctruth); 
-  theta_truth.resize(Nmctruth); 
-  enu_truth.resize(Nmctruth); 
-  nuvtxx_truth.resize(Nmctruth); 
-  nuvtxy_truth.resize(Nmctruth); 
-  nuvtxz_truth.resize(Nmctruth); 
-  time_truth.resize(Nmctruth); 
-  nu_dcosx_truth.resize(Nmctruth); 
-  nu_dcosy_truth.resize(Nmctruth); 
-  nu_dcosz_truth.resize(Nmctruth); 
-  zenith_truth.resize(Nmctruth); 
-  azimut_truth.resize(Nmctruth); 
-  beamangleX_truth.resize(Nmctruth); 
-  beamangleY_truth.resize(Nmctruth); 
-  beamangleZ_truth.resize(Nmctruth); 
-  lep_mom_truth.resize(Nmctruth); 
-  lep_dcosx_truth.resize(Nmctruth); 
-  lep_dcosy_truth.resize(Nmctruth); 
-  lep_dcosz_truth.resize(Nmctruth); 
-  nuWeight_truth.resize(Nmctruth); 
-  genie_no_primaries.resize(Nmctruth);
+    Nmctruth = mclist.size();
+    nuPDG_truth.clear();
+    ccnc_truth.clear();
+    mode_truth.clear();
+    W_truth.clear(); 
+    X_truth.clear(); 
+    Y_truth.clear(); 
+    hitnuc_truth.clear(); 
+    theta_truth.clear(); 
+    enu_truth.clear(); 
+    nuvtxx_truth.clear(); 
+    nuvtxy_truth.clear(); 
+    nuvtxz_truth.clear(); 
+    time_truth.clear(); 
+    nu_dcosx_truth.clear(); 
+    nu_dcosy_truth.clear(); 
+    nu_dcosz_truth.clear(); 
+    zenith_truth.clear(); 
+    azimut_truth.clear(); 
+    beamangleX_truth.clear(); 
+    beamangleY_truth.clear(); 
+    beamangleZ_truth.clear(); 
+    lep_mom_truth.clear(); 
+    lep_dcosx_truth.clear(); 
+    lep_dcosy_truth.clear(); 
+    lep_dcosz_truth.clear(); 
+    nuWeight_truth.clear(); 
+    genie_no_primaries.clear();
   
   
-  for (size_t i=0; i<Nmctruth; i++)
-  {
-    nuPDG_truth[i]        = mclist[i]->GetNeutrino().Nu().PdgCode();
-    ccnc_truth[i]         = mclist[i]->GetNeutrino().CCNC();
-    mode_truth[i]         = mclist[i]->GetNeutrino().Mode();
-    W_truth[i]            = mclist[i]->GetNeutrino().W();
-    X_truth[i]            = mclist[i]->GetNeutrino().X();
-    Y_truth[i]            = mclist[i]->GetNeutrino().Y();
-    hitnuc_truth[i]       = mclist[i]->GetNeutrino().HitNuc();
-    theta_truth[i]        = mclist[i]->GetNeutrino().Theta();
-    enu_truth[i]          = mclist[i]->GetNeutrino().Nu().E();
-    nuvtxx_truth[i]       = mclist[i]->GetNeutrino().Nu().Vx();
-    nuvtxy_truth[i]       = mclist[i]->GetNeutrino().Nu().Vy();
-    nuvtxz_truth[i]       = mclist[i]->GetNeutrino().Nu().Vz();
-    time_truth[i]         = mclist[i]->GetNeutrino().Nu().T();
-    nu_dcosx_truth[i]     = mclist[i]->GetNeutrino().Nu().Px()/mclist[i]->GetNeutrino().Nu().P();
-    nu_dcosy_truth[i]     = mclist[i]->GetNeutrino().Nu().Py()/mclist[i]->GetNeutrino().Nu().P();
-    nu_dcosz_truth[i]     = mclist[i]->GetNeutrino().Nu().Pz()/mclist[i]->GetNeutrino().Nu().P();
-    zenith_truth[i]       = TMath::ACos(mclist[i]->GetNeutrino().Nu().Pz()/mclist[i]->GetNeutrino().Nu().P());
-    azimut_truth[i]       = TMath::ATan((mclist[i]->GetNeutrino().Nu().Py()/mclist[i]->GetNeutrino().Nu().P())/(mclist[i]->GetNeutrino().Nu().Pz()/mclist[i]->GetNeutrino().Nu().P()));
-    beamangleX_truth[i]   = TMath::ACos(mclist[i]->GetNeutrino().Nu().Px()/mclist[i]->GetNeutrino().Nu().P());
-    beamangleY_truth[i]   = TMath::ACos(mclist[i]->GetNeutrino().Nu().Py()/mclist[i]->GetNeutrino().Nu().P());
-    beamangleZ_truth[i]   = TMath::ACos(mclist[i]->GetNeutrino().Nu().Pz()/mclist[i]->GetNeutrino().Nu().P());
-    lep_mom_truth[i]      = mclist[i]->GetNeutrino().Lepton().P();
-    lep_dcosx_truth[i]    = mclist[i]->GetNeutrino().Lepton().Px()/mclist[i]->GetNeutrino().Lepton().P();
-    lep_dcosy_truth[i]    = mclist[i]->GetNeutrino().Lepton().Py()/mclist[i]->GetNeutrino().Lepton().P();
-    lep_dcosz_truth[i]    = mclist[i]->GetNeutrino().Lepton().Pz()/mclist[i]->GetNeutrino().Lepton().P();
-    genie_no_primaries[i] = mclist[i]->NParticles();
+    nuPDG_truth.resize(Nmctruth);
+    ccnc_truth.resize(Nmctruth);
+    mode_truth.resize(Nmctruth);
+    W_truth.resize(Nmctruth); 
+    X_truth.resize(Nmctruth); 
+    Y_truth.resize(Nmctruth); 
+    hitnuc_truth.resize(Nmctruth); 
+    theta_truth.resize(Nmctruth); 
+    enu_truth.resize(Nmctruth); 
+    nuvtxx_truth.resize(Nmctruth); 
+    nuvtxy_truth.resize(Nmctruth); 
+    nuvtxz_truth.resize(Nmctruth); 
+    time_truth.resize(Nmctruth); 
+    nu_dcosx_truth.resize(Nmctruth); 
+    nu_dcosy_truth.resize(Nmctruth); 
+    nu_dcosz_truth.resize(Nmctruth); 
+    zenith_truth.resize(Nmctruth); 
+    azimut_truth.resize(Nmctruth); 
+    beamangleX_truth.resize(Nmctruth); 
+    beamangleY_truth.resize(Nmctruth); 
+    beamangleZ_truth.resize(Nmctruth); 
+    lep_mom_truth.resize(Nmctruth); 
+    lep_dcosx_truth.resize(Nmctruth); 
+    lep_dcosy_truth.resize(Nmctruth); 
+    lep_dcosz_truth.resize(Nmctruth); 
+    nuWeight_truth.resize(Nmctruth); 
+    genie_no_primaries.resize(Nmctruth);
     
-    auto gt = e.getValidHandle< std::vector<simb::GTruth> >("generator");
   
-    if ( gt ){
-      auto gtruth = (*gt)[0];
-      nuWeight_truth[i]  = gtruth.fweight;
+    for (size_t i=0; i<Nmctruth; i++)
+    {
+      nuPDG_truth[i]        = mclist[i]->GetNeutrino().Nu().PdgCode();
+      ccnc_truth[i]         = mclist[i]->GetNeutrino().CCNC();
+      mode_truth[i]         = mclist[i]->GetNeutrino().Mode();
+      W_truth[i]            = mclist[i]->GetNeutrino().W();
+      X_truth[i]            = mclist[i]->GetNeutrino().X();
+      Y_truth[i]            = mclist[i]->GetNeutrino().Y();
+      hitnuc_truth[i]       = mclist[i]->GetNeutrino().HitNuc();
+  	  theta_truth[i]        = mclist[i]->GetNeutrino().Theta();
+      enu_truth[i]          = mclist[i]->GetNeutrino().Nu().E();
+      nuvtxx_truth[i]       = mclist[i]->GetNeutrino().Nu().Vx();
+      nuvtxy_truth[i]       = mclist[i]->GetNeutrino().Nu().Vy();
+      nuvtxz_truth[i]       = mclist[i]->GetNeutrino().Nu().Vz();
+  	  time_truth[i]         = mclist[i]->GetNeutrino().Nu().T();
+      nu_dcosx_truth[i]     = mclist[i]->GetNeutrino().Nu().Px()/mclist[i]->GetNeutrino().Nu().P();
+      nu_dcosy_truth[i]     = mclist[i]->GetNeutrino().Nu().Py()/mclist[i]->GetNeutrino().Nu().P();
+      nu_dcosz_truth[i]     = mclist[i]->GetNeutrino().Nu().Pz()/mclist[i]->GetNeutrino().Nu().P();
+  	  zenith_truth[i]       = TMath::ACos(mclist[i]->GetNeutrino().Nu().Pz()/mclist[i]->GetNeutrino().Nu().P());
+  	  azimut_truth[i]       = TMath::ATan((mclist[i]->GetNeutrino().Nu().Py()/mclist[i]->GetNeutrino().Nu().P())/(mclist[i]->GetNeutrino().Nu().Pz()/mclist[i]->GetNeutrino().Nu().P()));
+  	  beamangleX_truth[i]   = TMath::ACos(mclist[i]->GetNeutrino().Nu().Px()/mclist[i]->GetNeutrino().Nu().P());
+  	  beamangleY_truth[i]   = TMath::ACos(mclist[i]->GetNeutrino().Nu().Py()/mclist[i]->GetNeutrino().Nu().P());
+  	  beamangleZ_truth[i]   = TMath::ACos(mclist[i]->GetNeutrino().Nu().Pz()/mclist[i]->GetNeutrino().Nu().P());
+      lep_mom_truth[i]      = mclist[i]->GetNeutrino().Lepton().P();
+      lep_dcosx_truth[i]    = mclist[i]->GetNeutrino().Lepton().Px()/mclist[i]->GetNeutrino().Lepton().P();
+      lep_dcosy_truth[i]    = mclist[i]->GetNeutrino().Lepton().Py()/mclist[i]->GetNeutrino().Lepton().P();
+      lep_dcosz_truth[i]    = mclist[i]->GetNeutrino().Lepton().Pz()/mclist[i]->GetNeutrino().Lepton().P();
+      genie_no_primaries[i] = mclist[i]->NParticles();
+      
+      auto gt = e.getValidHandle< std::vector<simb::GTruth> >("generator");
+  
+      if ( gt ){
+        auto gtruth = (*gt)[0];
+        nuWeight_truth[i]  = gtruth.fweight;
+      }
     }
-  }
+  } // end fSaveGenieGenInfo
 
   // Get Hits information
-  art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>(fHitsModuleLabel);
-  std::vector<art::Ptr<recob::Hit>> hitlist;
+  if (fSaveHitsInfo){
+    art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>(fHitsModuleLabel);
+    std::vector<art::Ptr<recob::Hit>> hitlist;
   
-  if (hitHandle.isValid())
-    art::fill_ptr_vector(hitlist, hitHandle);
+    if (hitHandle.isValid())
+      art::fill_ptr_vector(hitlist, hitHandle);
   
-  Nhits = hitlist.size();
-  hit_channel.clear();
-  hit_tpc.clear();
-  hit_plane.clear();
-  hit_wire.clear();
-  hit_peakT.clear();
-  hit_charge.clear();
-  hit_ph.clear();
-  hit_startT.clear();
-  hit_endT.clear();
-  hit_width.clear();
-  hit_rms.clear();
-  hit_goodnessOfFit.clear();
-  hit_multiplicity.clear();
+    Nhits = hitlist.size();
+    hit_channel.clear();
+    hit_tpc.clear();
+    hit_plane.clear();
+    hit_wire.clear();
+    hit_peakT.clear();
+    hit_charge.clear();
+    hit_ph.clear();
+    hit_startT.clear();
+    hit_endT.clear();
+    hit_width.clear();
+    hit_rms.clear();
+    hit_goodnessOfFit.clear();
+    hit_multiplicity.clear();
   
-  hit_channel.resize(Nhits);
-  hit_tpc.resize(Nhits);
-  hit_plane.resize(Nhits);
-  hit_wire.resize(Nhits);
-  hit_peakT.resize(Nhits);
-  hit_charge.resize(Nhits);
-  hit_ph.resize(Nhits);
-  hit_startT.resize(Nhits);
-  hit_endT.resize(Nhits);
-  hit_width.resize(Nhits);
-  hit_rms.resize(Nhits);
-  hit_goodnessOfFit.resize(Nhits);
-  hit_multiplicity.resize(Nhits);
+    hit_channel.resize(Nhits);
+    hit_tpc.resize(Nhits);
+    hit_plane.resize(Nhits);
+    hit_wire.resize(Nhits);
+    hit_peakT.resize(Nhits);
+    hit_charge.resize(Nhits);
+    hit_ph.resize(Nhits);
+    hit_startT.resize(Nhits);
+    hit_endT.resize(Nhits);
+    hit_width.resize(Nhits);
+    hit_rms.resize(Nhits);
+    hit_goodnessOfFit.resize(Nhits);
+    hit_multiplicity.resize(Nhits);
   
-  no_hits = (int) Nhits;
+    no_hits = (int) Nhits;
   
-  for (size_t i=0; i<Nhits; i++)
-  {
-    hit_channel[i]       = hitlist[i]->Channel();
-    hit_tpc[i]           = hitlist[i]->WireID().TPC;
-    hit_plane[i]         = hitlist[i]->WireID().Plane;
-    hit_wire[i]          = hitlist[i]->WireID().Wire;
-    hit_peakT[i]         = hitlist[i]->PeakTime();
-    hit_charge[i]        = hitlist[i]->Integral();
-    hit_ph[i]            = hitlist[i]->PeakAmplitude();
-    hit_startT[i]        = hitlist[i]->StartTick();
-    hit_endT[i]          = hitlist[i]->EndTick();
-    hit_width[i]         = hitlist[i]->EndTick() - hitlist[i]->StartTick();
-    hit_rms[i]           = hitlist[i]->RMS();
-    hit_goodnessOfFit[i] = hitlist[i]->GoodnessOfFit();
-    hit_multiplicity[i]  = hitlist[i]->Multiplicity();
-  }
+    for (size_t i=0; i<Nhits; i++)
+    {
+      hit_channel[i]       = hitlist[i]->Channel();
+      hit_tpc[i]           = hitlist[i]->WireID().TPC;
+      hit_plane[i]         = hitlist[i]->WireID().Plane;
+      hit_wire[i]          = hitlist[i]->WireID().Wire;
+      hit_peakT[i]         = hitlist[i]->PeakTime();
+      hit_charge[i]        = hitlist[i]->Integral();
+      hit_ph[i]            = hitlist[i]->PeakAmplitude();
+      hit_startT[i]        = hitlist[i]->StartTick();
+      hit_endT[i]          = hitlist[i]->EndTick();
+      hit_width[i]         = hitlist[i]->EndTick() - hitlist[i]->StartTick();
+      hit_rms[i]           = hitlist[i]->RMS();
+      hit_goodnessOfFit[i] = hitlist[i]->GoodnessOfFit();
+      hit_multiplicity[i]  = hitlist[i]->Multiplicity();
+    }
+  } // end fSaveHitsInfo
 
   // Get Photons Lite information
-  art::ValidHandle<std::vector<sim::SimPhotonsLite>> pliteHandle = e.getValidHandle<std::vector<sim::SimPhotonsLite>>(fPhotonsLiteModuleLabel);
-  std::vector<art::Ptr<sim::SimPhotonsLite>> plitelist;
+  if (fSavePhotonsInfo){
+    art::ValidHandle<std::vector<sim::SimPhotonsLite>> pliteHandle = e.getValidHandle<std::vector<sim::SimPhotonsLite>>(fPhotonsLiteModuleLabel);
+    std::vector<art::Ptr<sim::SimPhotonsLite>> plitelist;
   
-  if (pliteHandle.isValid())
-    art::fill_ptr_vector(plitelist, pliteHandle);
+    if (pliteHandle.isValid())
+      art::fill_ptr_vector(plitelist, pliteHandle);
   
-  Nphotons = plitelist.size();
+    Nphotons = plitelist.size();
   
-  for(size_t i = 0; i < Nphotons; i++){
-    auto spl = pliteHandle->at(i);
-    for(auto const& it : spl.DetectedPhotons){
-      nphotons += it.second;
+    for(size_t i = 0; i < Nphotons; i++){
+      auto spl = pliteHandle->at(i);
+      for(auto const& it : spl.DetectedPhotons){
+        nphotons += it.second;
+      }
     }
-  }
   
-  no_photons = nphotons;
+    no_photons = nphotons;
+  } // end SavePhotonsInfo
 
   // Fill Tree
   fTree->Fill();

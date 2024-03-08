@@ -702,13 +702,13 @@ void SNAna2::analyze(art::Event const & evt)
             Hit_True_TrackID.push_back(ThisHitIDE[ideL].trackID);
             for (size_t ipart=0; ipart<allTruthParts.size(); ++ipart) {
 
-              if (allTruthParts[ipart].TrackId() == ThisHitIDE[ideL].trackID) {
+              if (allTruthParts[ipart].TrackId() == std::abs(ThisHitIDE[ideL].trackID)) {
                 Hit_True_EvEnergy.at(colHitCount) += allTruthParts[ipart].E();
               }
             }
             if (ThisHitIDE[ideL].energyFrac > TopEFrac) {
               TopEFrac = ThisHitIDE[ideL].energyFrac;
-              Hit_True_MainTrID.at(colHitCount) = ThisHitIDE[ideL].trackID;
+              Hit_True_MainTrID.at(colHitCount) = std::abs(ThisHitIDE[ideL].trackID);
             }
           }
 
@@ -742,7 +742,7 @@ void SNAna2::analyze(art::Event const & evt)
           {
             for(unsigned int i = 0; i < ThisSimIDE.size(); i++)
             {
-              if(ThisSimIDE.at(i)->trackID==Hit_True_MainTrID[colHitCount])
+              if(std::abs(ThisSimIDE.at(i)->trackID)==Hit_True_MainTrID[colHitCount])
               {
                 Hit_True_X     .push_back(ThisSimIDE.at(i)->x           );
                 Hit_True_Y     .push_back(ThisSimIDE.at(i)->y           );
@@ -1143,7 +1143,7 @@ void SNAna2::SaveNeighbourADC(int channel,
 int SNAna2::WhichParType( int TrID )
 {
   int ThisPType = type_map["Other"];
-  auto const& it=trkIDToPType.find(TrID);
+  auto const& it=trkIDToPType.find(std::abs(TrID));
   if(it!=trkIDToPType.end()){
     ThisPType = type_map[it->second];
   }
@@ -1238,7 +1238,7 @@ void SNAna2::SaveIDEs(art::Event const & evt)
 bool SNAna2::InMyMap( int TrID, std::map< int, simb::MCParticle> ParMap )
 {
   std::map<int, simb::MCParticle>::iterator ParIt;
-  ParIt = ParMap.find( TrID );
+  ParIt = ParMap.find( std::abs(TrID) );
   if ( ParIt != ParMap.end() ) {
     return true;
   } else

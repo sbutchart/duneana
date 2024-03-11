@@ -1,3 +1,5 @@
+add_subdirectory(fcl_old)
+
 art_make( BASENAME_ONLY MODULE_LIBRARIES
   lardataalg::DetectorInfo
   larcore::Geometry_Geometry_service

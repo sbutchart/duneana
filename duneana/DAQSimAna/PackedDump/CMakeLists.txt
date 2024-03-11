@@ -1,15 +1,3 @@
-include(MakeDuneToolBuilder)
-add_subdirectory(SNAnaClustering)
-add_subdirectory(RunningSumHitFinder)
-add_subdirectory(AbsRunningSumHitFinder)
-add_subdirectory(CalibrationTree)
-add_subdirectory(DAQQuickClustering)
-add_subdirectory(DataHit)
-add_subdirectory(fcl)
-add_subdirectory(PackedDump)
-add_subdirectory(TriggerPrimitiveFinder)
-add_subdirectory(WaveformDump)
-
 art_make( BASENAME_ONLY MODULE_LIBRARIES
   dunepdlegacy_Services_ChannelMap_PdspChannelMapService_service
   larcore::Geometry_Geometry_service
@@ -24,7 +12,7 @@ art_make( BASENAME_ONLY MODULE_LIBRARIES
   larsim::MCCheater_PhotonBackTrackerService_service
   larsim::Simulation nug4::ParticleNavigation lardataobj_Simulation
   lardata::ArtDataHelper
-  nusimdata::SimulationBase	
+  nusimdata::SimulationBase
   ART_FRAMEWORK_CORE
   ART_FRAMEWORK_PRINCIPAL
   ART_FRAMEWORK_SERVICES_REGISTRY
@@ -37,8 +25,12 @@ art_make( BASENAME_ONLY MODULE_LIBRARIES
   messagefacility::MF_MessageLogger
   cetlib::cetlib cetlib_except
   ROOT_BASIC_LIB_LIST
+  EXCLUDE read_packed.cxx
   )
+
+cet_make_exec(read_packed SOURCE read_packed.cxx)
 
 install_fhicl()
 install_headers()
 install_source()
+

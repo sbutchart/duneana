@@ -1,4 +1,4 @@
-# addnoise_findprim_daqsimanas_refactored.fcl
+# addnoise_findprim_daqsimanas.fcl
 
 # Read in (presumably noise-free) waveforms, add noise and pedestals,
 # then find trigger primitives on the (now noisy) waveforms, and save
@@ -19,10 +19,25 @@ trigprim_snana: {
 }
 END_PROLOG
 #include "opticaldetectormodules_dune.fcl"
-#include "detsim_1dsimulation_dune10kt_1x2x6.fcl"
+#include "standard_detsim_dune10kt_1x2x6.fcl"
+
 
 process_name: PrimSim
-services.TFileService: { fileName: "SNAna_refactored_plus_trigprim_multithreshold.root" }
+
+services: @local::dunefd_simulation_services
+services.TFileService: { fileName: "SNAna_plus_trigprim_multithreshold.root" }
+services.TimeTracker:       {}
+services.MemoryTracker:         { } # default is one
+services.RandomNumberGenerator: {} #ART native random number generator
+// services.FileCatalogMetadata:  @local::art_file_catalog_mc
+services.NuRandomService:       @local::per_event_NuRandomService  # seedservice.fcl
+services.message:              @local::dune_message_services_prod
+services.Geometry: @local::dune10kt_1x2x6_geo
+#source is now a root file
+source: {
+  module_type: RootInput
+  maxEvents:  -1        # Number of events to create
+}
 
 # Define and configure some modules to do work on each event.
 # First modules are defined; they are scheduled later.
@@ -31,8 +46,8 @@ physics: {
    producers: {
       simwire: {
          module_type: "SimWireDUNE"
-         SimChannelLabel: "elecDrift"
-	 NoiseOn: true
+         SimChannelLabel: "largeant"
+         NoiseOn: true
          PedestalOn: true
          DistortOn: false
          SuppressOn: false
@@ -150,10 +165,6 @@ services.AdcDistortService:        @local::stuckbits
 services.AdcSuppressService:       @local::zsnone
 services.AdcCompressService:       @local::cmpreplace
 services.DetPedestalService:       @local::dune_fixedpeds
-
-#Backtracker label
-services.BackTrackerService.BackTracker.SimChannelModuleLabel: "elecDrift"
-
 
 #Optical detector configuration
 physics.producers.ophit.InputModule: "opdigi"

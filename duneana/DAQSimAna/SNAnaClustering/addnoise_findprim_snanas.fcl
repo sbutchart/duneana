@@ -140,6 +140,7 @@ services.message.destinations.LogStandardOut.categories.SNAna_module.limit:-1
 # services.message.destinations.LogStandardOut.categories.SNAna_module.limit:-1
 # services.message.destinations.LogStandardOut.categories.default.limit:0
 
+services.Geometry: @local::dune10kt_1x2x6_v5_refactored_geo
 
 # DetSim services. These are used by SimWire to add noise and
 # pedestals to the incoming (noise-free) waveforms

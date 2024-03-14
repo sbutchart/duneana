@@ -39,8 +39,9 @@ cet_build_plugin(TriggerPrimitiveFinderPass1 art::tool
 
 cet_build_plugin(TriggerPrimitiveFinderPass2 art::tool
   fhiclcpp cetlib::cetlib cetlib_except
-  
+
   duneana_DAQSimAna_TriggerPrimitiveFinder_TriggerPrimitiveFinderPass1_tool
+
 )
 
 cet_build_plugin(TriggerPrimitiveFinderTemplate art::tool

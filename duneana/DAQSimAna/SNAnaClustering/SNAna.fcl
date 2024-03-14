@@ -2,7 +2,7 @@ BEGIN_PROLOG
 
 standard_snana:
 {
-  module_type:		SNAna2
+  module_type:		SNAna
 
   RawDigitLabel:	"daq"           #String for the process that made the raw digits
   HitLabel:		"hitfd"         #String for the process that made the reco hits

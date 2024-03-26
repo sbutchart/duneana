@@ -1,13 +1,8 @@
 include_directories ( $ENV{GENIE_INC}/GENIE )
 
-# nusystematics
-##cet_find_library( SYSTTOOLS NAMES systematicstools_interface systematicstools_interpreters systematicstools_utility PATHS ENV SYSTEMATICSTOOLS_LIB NO_DEFAULT_PATH )
-
 cet_build_plugin(CAFMaker   art::module
                         duneanaobj_StandardRecord
                         duneanaobj_StandardRecordFlat
-                        nugen::NuReweight
-                        nugen::NuReweight_art
                         nugen::EventGeneratorBase_GENIE
 			nusimdata::SimulationBase
                         ART_FRAMEWORK_CORE
@@ -23,9 +18,6 @@ cet_build_plugin(CAFMaker   art::module
                         cetlib::cetlib cetlib_except
                         ROOT_BASIC_LIB_LIST
 			${GENIE_LIB_LIST}
-                        systematicstools::interface
-			systematicstools::interpreters
-			systematicstools::utility
                         dunereco::CVN_func
                         lardataobj::RecoBase
                         larpandora::LArPandoraInterface

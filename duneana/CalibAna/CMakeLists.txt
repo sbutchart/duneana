@@ -29,6 +29,7 @@ art_make(BASENAME_ONLY
          cetlib::cetlib
 	 cetlib_except
          ROOT_BASIC_LIB_LIST
+	 ROOT::Minuit
          )
 
 install_fhicl()

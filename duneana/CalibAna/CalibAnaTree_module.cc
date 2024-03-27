@@ -138,20 +138,6 @@ void dune::CalibAnaTree::analyze(art::Event const& e)
 
   EDet det = kNOTDEFINED;
 
-  const bool hasSBND = ((gdml.find("sbnd") != std::string::npos) ||
-			(geometry->DetectorName().find("sbnd") != std::string::npos));
-
-  const bool hasICARUS = ((gdml.find("icarus") != std::string::npos) ||
-			(geometry->DetectorName().find("icarus") != std::string::npos));
-
-  if(hasSBND == hasICARUS) {
-    std::cout << "CalibAnaTree: Unable to automatically determine either SBND or ICARUS!" << std::endl;
-    abort();
-  }
-
-  if(hasSBND) det = kSBND;
-  if(hasICARUS) det = kICARUS;
-
   // Setup the volumes
   std::vector<std::vector<geo::BoxBoundedGeo>> TPCVols;
   std::vector<geo::BoxBoundedGeo> AVs;
@@ -265,15 +251,14 @@ void dune::CalibAnaTree::analyze(art::Event const& e)
 
   // Prep truth-to-reco-matching info
   //
-  // Use helper functions from CAFMaker/FillTrue
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map;
   std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
   const cheat::BackTrackerService *bt = NULL;
 
   if (simchannels.size()) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-    id_to_ide_map = caf::PrepSimChannels(simchannels, *geometry);
-    id_to_truehit_map = caf::PrepTrueHits(allHits, clock_data, *bt_serv.get());
+    // id_to_ide_map = caf::PrepSimChannels(simchannels, *geometry);
+    // id_to_truehit_map = caf::PrepTrueHits(allHits, clock_data, *bt_serv.get());
     bt = bt_serv.get();
   }
 
@@ -376,7 +361,7 @@ void dune::CalibAnaTree::analyze(art::Event const& e)
 
     // Save!
     if (select) {
-      if (fVerbose) std::cout << "Track Selected! By tool: " << i_select << std::endl;
+	//if (fVerbose) std::cout << "Track Selected! By tool: " << i_select << std::endl;
       fTree->Fill();
     }
   }
@@ -390,20 +375,20 @@ float HitMinTime(const std::vector<dune::TrackHitInfo> &hits,
 		bool TPCE,
 		dune::EDet det) {
   double min = -1;
-  bool hit_is_TPCE = -1;
+  //bool hit_is_TPCE = -1;
 
-  for (const dune::TrackHitInfo &h: hits) {
+  // for (const dune::TrackHitInfo &h: hits) {
 
-    // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
-    if(det == dune::kICARUS) hit_is_TPCE = h.h.tpc <= 1;
+    // // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
+    // if(det == dune::kICARUS) hit_is_TPCE = h.h.tpc <= 1;
 
-    // In SBND, TPC 0 and 1
-    if(det == dune::kSBND) hit_is_TPCE = h.h.tpc <= 0;
+    // // In SBND, TPC 0 and 1
+    // if(det == dune::kSBND) hit_is_TPCE = h.h.tpc <= 0;
 
-    if (h.oncalo && hit_is_TPCE == TPCE) {
-      if (min < 0. || h.h.time < min) min = h.h.time;
-    }
-  }
+    // if (h.oncalo && hit_is_TPCE == TPCE) {
+    //   if (min < 0. || h.h.time < min) min = h.h.time;
+    // }
+  // }
 
   return min;
 }
@@ -414,20 +399,20 @@ float HitMaxTime(const std::vector<dune::TrackHitInfo> &hits,
 		bool TPCE,
 		dune::EDet det) {
   double max = -1;
-  bool hit_is_TPCE = -1;
+  // bool hit_is_TPCE = -1;
 
-  for (const dune::TrackHitInfo &h: hits) {
+  // for (const dune::TrackHitInfo &h: hits) {
 
-    // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
-    if(det == dune::kICARUS) hit_is_TPCE = h.h.tpc <= 1;
+  //   // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
+  //   if(det == dune::kICARUS) hit_is_TPCE = h.h.tpc <= 1;
 
-    // In SBND, TPC 0 and 1
-    if(det == dune::kSBND) hit_is_TPCE = h.h.tpc <= 0;
+  //   // In SBND, TPC 0 and 1
+  //   if(det == dune::kSBND) hit_is_TPCE = h.h.tpc <= 0;
 
-    if (h.oncalo && hit_is_TPCE == TPCE) {
-      if (max < 0. || h.h.time > max) max = h.h.time;
-    }
-  }
+  //   if (h.oncalo && hit_is_TPCE == TPCE) {
+  //     if (max < 0. || h.h.time > max) max = h.h.time;
+  //   }
+  // }
 
   return max;
 }
@@ -499,8 +484,8 @@ dune::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
 
   trueparticle.length = 0.;
   trueparticle.crosses_tpc = false;
-  trueparticle.wallin = (int)caf::kWallNone;
-  trueparticle.wallout = (int)caf::kWallNone;
+  // trueparticle.wallin = (int)caf::kWallNone;
+  // trueparticle.wallout = (int)caf::kWallNone;
   trueparticle.plane0VisE = 0.;
   trueparticle.plane1VisE = 0.;
   trueparticle.plane2VisE = 0.;
@@ -559,9 +544,9 @@ dune::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   }
 
   // get the wall
-  if (entry_point > 0) {
-    trueparticle.wallin = (int)caf::GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
-  }
+  // if (entry_point > 0) {
+  //   trueparticle.wallin = (int)caf::GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
+  // }
 
   int exit_point = -1;
 
@@ -627,9 +612,9 @@ dune::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   if (exit_point < 0 && entry_point >= 0) {
     exit_point = particle.NumberTrajectoryPoints() - 1;
   }
-  if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
-    trueparticle.wallout = (int)caf::GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
-  }
+  // if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
+  //   trueparticle.wallout = (int)caf::GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
+  // }
 
   // other truth information
   trueparticle.pdg = particle.PdgCode();
@@ -649,8 +634,8 @@ dune::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   trueparticle.endp = ConvertTVector((exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999));
   trueparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
 
-  trueparticle.start_process = (int)caf::GetG4ProcessID(particle.Process());
-  trueparticle.end_process = (int)caf::GetG4ProcessID(particle.EndProcess());
+  // trueparticle.start_process = (int)caf::GetG4ProcessID(particle.Process());
+  // trueparticle.end_process = (int)caf::GetG4ProcessID(particle.EndProcess());
 
   trueparticle.G4ID = particle.TrackId();
   trueparticle.parent = particle.Mother();
@@ -951,8 +936,8 @@ void dune::CalibAnaTree::FillTrackTruth(const detinfo::DetectorClocksData &clock
     const geo::GeometryCore *geo) {
 
   // Lookup the true-particle match -- use utils in CAF
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
-  float total_energy = CAFRecoUtils::TotalHitEnergy(clock_data, trkHits);
+  std::vector<std::pair<int, float>> matches ;//= CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
+  float total_energy = 0.;//= CAFRecoUtils::TotalHitEnergy(clock_data, trkHits);
 
   fTrack->truth.depE = total_energy / 1000. /* MeV -> GeV */;
 

@@ -106,16 +106,15 @@ namespace caf {
       std::string fDirectionRecoLabelNumu;
       std::string fPandoraNuVertexModuleLabel;
 
-      TFile* fOutFile = nullptr;
       TTree* fTree = nullptr;
       TTree* fMetaTree = nullptr;
       TTree* fGENIETree = nullptr;
 
-      TFile* fFlatFile = nullptr;
-      TTree* fFlatTree = nullptr;
-      flat::Flat<caf::StandardRecord>* fFlatRecord = nullptr;
+      std::unique_ptr<TFile> fFlatFile;
+      TTree* fFlatTree; //Ownership will be managed directly by ROOT
+      std::unique_ptr<flat::Flat<caf::StandardRecord>> fFlatRecord;
 
-      genie::NtpMCEventRecord* fEventRecord = nullptr;
+      genie::NtpMCEventRecord *fEventRecord = nullptr;
 
       double fMetaPOT;
       int fMetaRun, fMetaSubRun, fMetaVersion;
@@ -138,28 +137,25 @@ namespace caf {
 
   //------------------------------------------------------------------------------
   CAFMaker::CAFMaker(fhicl::ParameterSet const& pset)
-    : EDAnalyzer(pset)
+    : EDAnalyzer(pset),
+      fCVNLabel(pset.get<std::string>("CVNLabel")),
+      fRegCNNLabel(pset.get<std::string>("RegCNNLabel")),
+      fMCTruthLabel(pset.get<std::string>("MCTruthLabel")),
+      fGTruthLabel(pset.get<std::string>("GTruthLabel")),
+      fMCFluxLabel(pset.get<std::string>("MCFluxLabel")),
+      fPOTSummaryLabel(pset.get<std::string>("POTSummaryLabel")),
+      fEnergyRecoNueLabel(pset.get<std::string>("EnergyRecoNueLabel")),
+      fEnergyRecoNumuLabel(pset.get<std::string>("EnergyRecoNumuLabel")),
+      fDirectionRecoLabelNue(pset.get<std::string>("DirectionRecoLabelNue")),
+      fDirectionRecoLabelNumu(pset.get<std::string>("DirectionRecoLabelNumu")),
+      fPandoraNuVertexModuleLabel(pset.get< std::string >("PandoraNuVertexModuleLabel")),
+      fEventRecord(new genie::NtpMCEventRecord)
   {
-    fCVNLabel = pset.get<std::string>("CVNLabel");
-    fRegCNNLabel = pset.get<std::string>("RegCNNLabel");
-    fMCTruthLabel = pset.get<std::string>("MCTruthLabel", "generator");
-    fGTruthLabel = pset.get<std::string>("GTruthLabel", "generator");
-    fMCFluxLabel = pset.get<std::string>("MCSluxLabel", "generator");
-    fPOTSummaryLabel = pset.get<std::string>("POTSummaryLabel", "generator");
-    fEnergyRecoNueLabel = pset.get<std::string>("EnergyRecoNueLabel");
-    fEnergyRecoNumuLabel = pset.get<std::string>("EnergyRecoNumuLabel");
-    fDirectionRecoLabelNue = pset.get<std::string>("DirectionRecoLabelNue", "");
-    fDirectionRecoLabelNumu = pset.get<std::string>("DirectionRecoLabelNumu", "");
-    fPandoraNuVertexModuleLabel = pset.get< std::string >("PandoraNuVertexModuleLabel");
-    fEventRecord = new genie::NtpMCEventRecord();
 
-
-    fOutFile = new TFile("caf.root", "RECREATE");
-
-    if(pset.get<bool>("CreateFlatCAF", true)){
+    if(pset.get<bool>("CreateFlatCAF")){
       // LZ4 is the fastest format to decompress. I get 3x faster loading with
       // this compared to the default, and the files are only slightly larger.
-      fFlatFile = new TFile("flatcaf.root", "RECREATE", "",
+      fFlatFile = std::make_unique<TFile>("flatcaf.root", "RECREATE", "",
                             ROOT::CompressionSettings(ROOT::kLZ4, 1));
     }
   }
@@ -172,14 +168,14 @@ namespace caf {
   //------------------------------------------------------------------------------
   void CAFMaker::beginJob()
   {
-    fOutFile->cd();
-    fTree = new TTree("cafTree", "cafTree");
+    art::ServiceHandle<art::TFileService> tfs;
+    fTree = tfs->make<TTree>("cafTree", "cafTree");
 
     // Create the branch. We will update the address before we write the tree
     caf::StandardRecord* rec = 0;
     fTree->Branch("rec", "caf::StandardRecord", &rec);
 
-    fMetaTree = new TTree("meta", "meta");
+    fMetaTree = tfs->make<TTree>("meta", "meta");
 
     fMetaTree->Branch("pot", &fMetaPOT, "pot/D");
     fMetaTree->Branch("run", &fMetaRun, "run/I");
@@ -189,14 +185,15 @@ namespace caf {
     fMetaPOT = 0.;
     fMetaVersion = 1;
 
-    fGENIETree = new TTree("genieEvt", "genieEvt");
+    fGENIETree = tfs->make<TTree>("genieEvt", "genieEvt");
+
     fGENIETree->Branch("genie_record", "genie::NtpMCEventRecord", &fEventRecord);
 
     if(fFlatFile){
       fFlatFile->cd();
       fFlatTree = new TTree("cafTree", "cafTree");
 
-      fFlatRecord = new flat::Flat<caf::StandardRecord>(fFlatTree, "rec", "", 0);
+      fFlatRecord = std::make_unique<flat::Flat<caf::StandardRecord>>(fFlatTree, "rec", "", nullptr);
     }
 
   }
@@ -210,8 +207,6 @@ namespace caf {
                                std::vector<simb::MCFlux> const& flux,
                                art::Event const& evt)
   {
-    std::cout <<"MCTruth size: " << mctruth.size() << std::endl;
-    std::cout <<"GTruth size: " << gtruth.size() << std::endl;
     for(size_t i=0; i<mctruth.size(); i++){
       caf::SRTrueInteraction inter;
 
@@ -321,7 +316,7 @@ namespace caf {
 
         for(int daughterID = 0; daughterID < mcpart.NumberDaughters(); daughterID++){
           int daughter = mcpart.Daughter(daughterID);
-          part.daughters.push_back(daughter); //TOCHECK: Not sure this corresponds to the right id here
+          part.daughters.push_back(daughter);
         }
 
         //TODO: start and end processes/subprocesses are currently not filled
@@ -370,6 +365,8 @@ namespace caf {
       if(particle->IsPrimary()){
         SRInteraction reco;
 
+        reco.vtx = SRVector3D(-999, -999, -999); //Setting an unambiguous default value if no vertex is found
+
         //Retrieving the reco vertex
         lar_pandora::PFParticlesToVertices::const_iterator vIter = particlesToVertices.find(particle);
         if (particlesToVertices.end() != vIter) {
@@ -389,7 +386,7 @@ namespace caf {
 
         //Neutrino flavours hypotheses
         SRNeutrinoHypothesisBranch &nuhyp = reco.nuhyp;
-        //Filling only CVN at the moment. Filling the same info for all the particles -> CVN applies to the whole event as far as I know
+        //Filling only CVN at the moment.
         FillCVNInfo(nuhyp.cvn, evt);
 
         //Neutrino energy hypothese
@@ -434,7 +431,7 @@ namespace caf {
     meta.run = evt.id().run();
     meta.subrun = evt.id().subRun();
     meta.event = evt.id().event();
-    meta.subevt = 0; //Hardcoded to 0, not sure of how this should be used
+    meta.subevt = 0; //Hardcoded to 0, only makes sense in ND where multiple interactions can occur in the same event
 
     //Nothing is filled about the trigger for the moment
   }
@@ -443,7 +440,7 @@ namespace caf {
 
   void CAFMaker::FillBeamInfo(caf::SRBeamBranch &beam, const art::Event &evt) const
   {
-    //TODO: See how to retrieve these info
+    //This part will only be relevant when working on real data with real beam.
     beam.ismc = true; //Hardcoded to true at the moment.
   }
 
@@ -494,7 +491,7 @@ namespace caf {
       dirBranch.lngtrk.SetZ(dirReco->fRecoDirection.Z());
     }
     else{
-      std::cout << "Warning: No AngularRecoOutput found with label '" << fDirectionRecoLabelNumu << "'" << std::endl;
+      mf::LogWarning("CAFMaker") << "No AngularRecoOutput found with label '" << fDirectionRecoLabelNumu << "'";
     }
 
     dirReco = evt.getHandle<dune::AngularRecoOutput>(fDirectionRecoLabelNue);
@@ -504,7 +501,7 @@ namespace caf {
       dirBranch.heshw.SetZ(dirReco->fRecoDirection.Z());
     }
     else{
-      std::cout << "Warning: No AngularRecoOutput found with label '" << fDirectionRecoLabelNue << "'" << std::endl;
+      mf::LogWarning("CAFMaker") << "No AngularRecoOutput found with label '" << fDirectionRecoLabelNue << "'";
     }
   }
 
@@ -520,7 +517,7 @@ namespace caf {
         ErecBranch.regcnn = cnnResults[0];
     }
     else{
-      std::cout << "Warning: " << itag << " does not correspond to a valid RegCNNResult product" << std::endl;
+      mf::LogWarning("CAFMaker") << itag << " does not correspond to a valid RegCNNResult product";
     }
 
     art::Handle<dune::EnergyRecoOutput> ereconue = evt.getHandle<dune::EnergyRecoOutput>(fEnergyRecoNueLabel);
@@ -528,14 +525,14 @@ namespace caf {
 
 
     if(ereconue.failedToGet()){
-      std::cout << "Warning: " << fEnergyRecoNueLabel << " does not correspond to a valid EnergyRecoOutput product" << std::endl;
+      mf::LogWarning("CAFMaker") << fEnergyRecoNueLabel << " does not correspond to a valid EnergyRecoOutput product";
     }
     else{
       ErecBranch.calo = ereconue->fNuLorentzVector.E();
     }
 
     if(ereconumu.failedToGet()){
-      std::cout << "Warning: " << fEnergyRecoNumuLabel << " does not correspond to a valid EnergyRecoOutput product" << std::endl;
+      mf::LogWarning("CAFMaker") << fEnergyRecoNumuLabel << " does not correspond to a valid EnergyRecoOutput product";
     }
     else{
       ErecBranch.lep_calo = ereconumu->fNuLorentzVector.E();
@@ -553,7 +550,7 @@ namespace caf {
   {
     lar_pandora::PFParticleVector particleVector;
     lar_pandora::LArPandoraHelper::CollectPFParticles(evt, fPandoraNuVertexModuleLabel, particleVector);
-    unsigned int nuID = 999;
+    unsigned int nuID = std::numeric_limits<unsigned int>::max();
     for (unsigned int n = 0; n < particleVector.size(); ++n) {
       const art::Ptr<recob::PFParticle> particle = particleVector.at(n);
       if(particle->IsPrimary()){
@@ -583,12 +580,10 @@ namespace caf {
 
   int CAFMaker::FillGENIERecord(simb::MCTruth const& mctruth, simb::GTruth const& gtruth)
   {
-    genie::EventRecord* record = evgb::RetrieveGHEP(mctruth, gtruth);
+    std::unique_ptr<const genie::EventRecord> record(evgb::RetrieveGHEP(mctruth, gtruth));
     int cur_idx = fGENIETree->GetEntries();
-    fEventRecord->Fill(cur_idx, record);
+    fEventRecord->Fill(cur_idx, record.get());
     fGENIETree->Fill();
-
-    delete record;
 
     return cur_idx;
   }
@@ -603,28 +598,27 @@ namespace caf {
     
 
     if(fTree){
-      
       fTree->SetBranchAddress("rec", &psr);
     }
 
     art::ServiceHandle<geo::Geometry const> fGeometry;
     std::string geoName = fGeometry->DetectorName();
 
-    std::cout << "Geo name is: " << geoName << std::endl;
+    mf::LogInfo("CAFMaker") << "Geo name is: " << geoName;
 
     SRDetectorMeta *detector;
 
     if(geoName.find("dunevd10kt") != std::string::npos){
       detector = &(sr.meta.fd_vd);
-      std::cout << "Assuming the FD VD detector" << std::endl;
+      mf::LogInfo("CAFMaker") << "Assuming the FD VD detector";
     }
     else if (geoName.find("dune10kt") != std::string::npos)
     {
       detector = &(sr.meta.fd_hd);
-      std::cout << "Assuming the FD HD detector" << std::endl;
+      mf::LogInfo("CAFMaker") << "Assuming the FD HD detector";
     }
     else {
-      std::cout << "Warning: Didn't detect a know geometry. Defaulting to FD HD!" << std::endl;
+      mf::LogWarning("CAFMaker") << "Didn't detect a know geometry. Defaulting to FD HD!";
       detector = &(sr.meta.fd_hd);
     }
     
@@ -676,11 +670,6 @@ namespace caf {
   {
     fMetaTree->Fill();
 
-    fOutFile->cd();
-    fTree->Write();
-    fMetaTree->Write();
-    fGENIETree->Write();
-
     if(fFlatFile){
       fFlatFile->cd();
       fFlatTree->Write();
@@ -689,7 +678,8 @@ namespace caf {
       fFlatFile->Close();
     }
 
-    fOutFile->Close();
+    delete fEventRecord; //Making this a unique_pointer requires too many circonvolutions because of TTree->Branch requiring a pointer to a pointer
+
   }
 
   DEFINE_ART_MODULE(CAFMaker)

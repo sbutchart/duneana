@@ -57,7 +57,7 @@ private:
   int fEvent;
   int fW_plane[kMaxNumberCh];
   int fW_ch[kMaxNumberCh];
-  double fW_signal[kMaxNumberCh][kMaxTicks];
+  float fW_signal[kMaxNumberCh][kMaxTicks];
 
 };
 

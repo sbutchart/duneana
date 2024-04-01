@@ -78,7 +78,7 @@ void wire::WireAnaTree::beginJob(){
   fTree->Branch("run", &fRun);
   fTree->Branch("w_plane", &fW_plane, Form("w_plane[%d]/I", kMaxNumberCh));
   fTree->Branch("w_ch", &fW_ch, Form("w_ch[%d]/I", kMaxNumberCh));
-  fTree->Branch("w_signal", &fW_signal, Form("w_ch[%d][%d]/F", kMaxNumberCh, kMaxTicks));
+  fTree->Branch("w_signal", &fW_signal, Form("w_signal[%d][%d]/F", kMaxNumberCh, kMaxTicks));
 
 }  
 

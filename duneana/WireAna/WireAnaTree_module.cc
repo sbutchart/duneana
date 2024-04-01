@@ -50,7 +50,6 @@ public:
 
 private:
 
-  static const int kMaxNumberCh = 2560;
   art::InputTag fCalWireModuleLabel;
   TTree *fTree;
   int fRun;
@@ -77,9 +76,9 @@ void wire::WireAnaTree::beginJob(){
   fTree->Branch("event", &fEvent);
   fTree->Branch("subrun", &fSubrun);
   fTree->Branch("run", &fRun);
-  fTree->Branch("w_plane", &fW_plane, "w_plane[2560]/I");
-  fTree->Branch("w_ch", &fW_ch, "w_ch[2560]/I");
-  fTree->Branch("w_signal", &fW_signal, "w_ch[2560][6000]/F");
+  fTree->Branch("w_plane", &fW_plane, Form("w_plane[%d]/I", kMaxNumberCh));
+  fTree->Branch("w_ch", &fW_ch, Form("w_ch[%d]/I", kMaxNumberCh));
+  fTree->Branch("w_signal", &fW_signal, Form("w_ch[%d][%d]/F", kMaxNumberCh, kMaxTicks));
 
 }  
 

@@ -189,9 +189,6 @@ namespace dune {
     Vector3D start;       //!< Start position in the active TPC volume [cm]
     Vector3D end;         //!< End position in the active TPC volume [cm]
 
-    int   wallin;      //!< Wall of cryostat particle enters (wNone if starting in detector)
-    int   wallout;     //!< Wall of cryostat particle exits (wNone if stopping in detector)
-
     bool     cont_tpc;    //!< Whether the particle is contained in a single TPC
     bool     crosses_tpc; //!< Whether the particle crosses a TPC boundary
     bool     contained;   //!< Whether the particle is contained in a single active volume
@@ -269,19 +266,6 @@ namespace dune {
     Vector3D end; //!< End position of track [cm]
     Vector3D dir; //!< Direction of track
     float length; //!< Length of track [cm]
-
-    float hit_min_time_p0_tpcE; //!< Min hit time of track on plane 0 TPC E
-    float hit_max_time_p0_tpcE; //!< Max hit time of track on plane 0 TPC E
-    float hit_min_time_p1_tpcE; //!< Min hit time of track on plane 1 TPC E
-    float hit_max_time_p1_tpcE; //!< Max hit time of track on plane 1 TPC E
-    float hit_min_time_p2_tpcE; //!< Min hit time of track on plane 2 TPC E
-    float hit_max_time_p2_tpcE; //!< Max hit time of track on plane 2 TPC E
-    float hit_min_time_p0_tpcW; //!< Min hit time of track on plane 0 TPC W
-    float hit_max_time_p0_tpcW; //!< Max hit time of track on plane 0 TPC W
-    float hit_min_time_p1_tpcW; //!< Min hit time of track on plane 1 TPC W
-    float hit_max_time_p1_tpcW; //!< Max hit time of track on plane 1 TPC W
-    float hit_min_time_p2_tpcW; //!< Min hit time of track on plane 2 TPC W
-    float hit_max_time_p2_tpcW; //!< Max hit time of track on plane 2 TPC W
 
     float const_fit_C; //!< Fit parameter
     float const_fit_residuals; //!< Fit parameter

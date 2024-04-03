@@ -51,6 +51,14 @@ void ExpResiduals(int &npar, double *g, double &result, double *par, int flag) {
   result = sqrt(ret);
 }
 
+// declare truth utils, defined at the end
+std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>>PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels,
+										   const geo::GeometryCore &geo);
+std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
+							      const detinfo::DetectorClocksData &clockData,
+							      const cheat::BackTrackerService &backtracker);
+
+
 dune::CalibAnaTree::~CalibAnaTree() {
   delete fTrack;
 }
@@ -80,8 +88,8 @@ dune::CalibAnaTree::CalibAnaTree(fhicl::ParameterSet const& p)
     std::cout << "dune::CalibAnaTree: Bad tail fit residual range config :(" << fTailFitResidualRange << "). Fits will not be meaningful.\n";
   }
   fFillTrackEndHits = p.get<bool>("FillTrackEndHits", true);
-  fTrackEndHitWireBox = p.get<float>("TrackEndHitWireBox", 60); // 20 cm
-  fTrackEndHitTimeBox = p.get<float>("TrackEndHitTimeBox", 300); // about 20cm
+  fTrackEndHitWireBox = p.get<float>("TrackEndHitWireBox", 60); // 30 cm in the plane projection
+  fTrackEndHitTimeBox = p.get<float>("TrackEndHitTimeBox", 300); // 150 us, about 25 cm
 
   fRawDigitproducers = p.get<std::vector<art::InputTag>>("RawDigitproducers", {});
 
@@ -257,8 +265,8 @@ void dune::CalibAnaTree::analyze(art::Event const& e)
 
   if (simchannels.size()) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-    // id_to_ide_map = caf::PrepSimChannels(simchannels, *geometry);
-    // id_to_truehit_map = caf::PrepTrueHits(allHits, clock_data, *bt_serv.get());
+    id_to_ide_map = PrepSimChannels(simchannels, *geometry);
+    id_to_truehit_map = PrepTrueHits(allHits, clock_data, *bt_serv.get());
     bt = bt_serv.get();
   }
 
@@ -345,23 +353,23 @@ void dune::CalibAnaTree::analyze(art::Event const& e)
 
     // Save?
     bool select = false;
-    // if (!fSelectionTools.size()) select = true;
+    if (!fSelectionTools.size()) select = true;
 
-    // // Take the OR of each selection tool
-    // int i_select = 0;
-    // for (const std::unique_ptr<dune::ITCSSelectionTool> &t: fSelectionTools) {
-    //   if (t->DoSelect(*fTrack)) {
-    //     select = true;
-    //     fTrack->selected = i_select;
-    //     fTrack->nprescale = t->GetPrescale();
-    //     break;
-    //   }
-    //   i_select ++;
-    // }
+    // Take the OR of each selection tool
+    int i_select = 0;
+    for (const std::unique_ptr<dune::ITCSSelectionTool> &t: fSelectionTools) {
+      if (t->DoSelect(*fTrack)) {
+        select = true;
+        fTrack->selected = i_select;
+        fTrack->nprescale = t->GetPrescale();
+        break;
+      }
+      i_select ++;
+    }
 
     // Save!
     if (select) {
-	//if (fVerbose) std::cout << "Track Selected! By tool: " << i_select << std::endl;
+      if (fVerbose) std::cout << "Track Selected! By tool: " << i_select << std::endl;
       fTree->Fill();
     }
   }
@@ -1328,5 +1336,45 @@ dune::TrackHitInfo dune::CalibAnaTree::MakeHit(const recob::Hit &hit,
 
   return hinfo;
 }
+
+
+
+/// Code taken from sbncode/CAFMaker/FillTrue.cxx
+std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels,
+										    const geo::GeometryCore &geo)
+/// Creates map of WireID and sim::IDE by backtracked track ID
+{
+    std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> ret;
+
+    for (const art::Ptr<sim::SimChannel> sc : simchannels) {
+	// Lookup the wire of this channel
+	raw::ChannelID_t channel = sc->Channel();
+	std::vector<geo::WireID> maybewire = geo.ChannelToWire(channel);
+	geo::WireID thisWire; // Default constructor makes invalid wire
+	if (maybewire.size()) thisWire = maybewire[0];
+
+	for (const auto &item : sc->TDCIDEMap()) {
+	    for (const sim::IDE &ide: item.second) {
+		// indexing initializes empty vector
+		ret[abs(ide.trackID)].push_back({thisWire, &ide});
+	    }
+	}
+    }
+    return ret;
+}
+
+std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
+							      const detinfo::DetectorClocksData &clockData,
+							      const cheat::BackTrackerService &backtracker)
+{
+    std::map<int, std::vector<art::Ptr<recob::Hit>>> ret;
+    for (const art::Ptr<recob::Hit> h: allHits) {
+	for (int ID: backtracker.HitToTrackIds(clockData, *h)) {
+	    ret[abs(ID)].push_back(h);
+	}
+    }
+    return ret;
+}
+
 
 DEFINE_ART_MODULE(dune::CalibAnaTree)

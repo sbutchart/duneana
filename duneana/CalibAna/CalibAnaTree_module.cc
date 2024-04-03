@@ -354,7 +354,7 @@ void dune::CalibAnaTree::analyze(art::Event const& e)
 
     // Take the OR of each selection tool
     int i_select = 0;
-    for (const std::unique_ptr<dune::ITCSSelectionTool> &t: fSelectionTools) {
+    for (const std::unique_ptr<dune::ICATSelectionTool> &t: fSelectionTools) {
       if (t->DoSelect(*fTrack)) {
         select = true;
         fTrack->selected = i_select;

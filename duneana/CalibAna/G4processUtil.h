@@ -140,7 +140,7 @@ g4_process_ GetG4ProcessID(const std::string &process_name) {
 	MATCH_PROCESS(StepLimiter)
 	std::cerr << "Error: Process name with no match (" << process_name << ")\n";
     assert(false);
-    return caf::kG4UNKNOWN; // unreachable in debug mode
+    return kG4UNKNOWN; // unreachable in debug mode
 #undef MATCH_PROCESS
 #undef MATCH_PROCESS_NAMED
 

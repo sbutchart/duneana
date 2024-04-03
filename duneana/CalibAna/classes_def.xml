@@ -6,13 +6,13 @@
    <version ClassVersion="10" checksum="3295481036"/>
   </class>
   <class name="dune::TrueParticle" ClassVersion="10" >
-   <version ClassVersion="10" checksum="1854814101"/>
+   <version ClassVersion="10" checksum="240986196"/>
   </class>
   <class name="dune::TrueHit" ClassVersion="10" >
    <version ClassVersion="10" checksum="1144893705"/>
   </class>
   <class name="dune::TrackInfo" ClassVersion="10" >
-   <version ClassVersion="10" checksum="2602724210"/>
+   <version ClassVersion="10" checksum="1022826678"/>
   </class>
   <class name="dune::MetaInfo" ClassVersion="10" >
    <version ClassVersion="10" checksum="3074527675"/>

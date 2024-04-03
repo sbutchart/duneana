@@ -64,7 +64,7 @@
 #include "larsim/MCCheater/ParticleInventoryService.h"
 
 #include "CalibAnaTreeObj.h"
-//#include "ITCSSelectionTool.h"
+#include "ICATSelectionTool.h"
 
 namespace dune {
   class CalibAnaTree;
@@ -189,7 +189,7 @@ private:
   float fTrackEndHitTimeBox;
 
   // tools
-  //std::vector<std::unique_ptr<dune::ITCSSelectionTool>> fSelectionTools;
+  std::vector<std::unique_ptr<dune::ICATSelectionTool>> fSelectionTools;
 
   // persistent info
   MetaInfo fMeta;

@@ -85,10 +85,10 @@ dune::CalibAnaTree::CalibAnaTree(fhicl::ParameterSet const& p)
 
   fRawDigitproducers = p.get<std::vector<art::InputTag>>("RawDigitproducers", {});
 
-  // std::vector<fhicl::ParameterSet> selection_tool_configs(p.get<std::vector<fhicl::ParameterSet>>("SelectionTools"), {});
-  // for (const fhicl::ParameterSet &p: selection_tool_configs) {
-  //   fSelectionTools.push_back(art::make_tool<dune::ITCSSelectionTool>(p));
-  // }
+  std::vector<fhicl::ParameterSet> selection_tool_configs(p.get<std::vector<fhicl::ParameterSet>>("SelectionTools"), {});
+  for (const fhicl::ParameterSet &p: selection_tool_configs) {
+    fSelectionTools.push_back(art::make_tool<dune::ICATSelectionTool>(p));
+  }
 
   // Setup meta info
   fMeta.iproc = -1;

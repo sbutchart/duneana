@@ -1,4 +1,4 @@
-#add_subdirectory(fcl)
+add_subdirectory(fcl)
 #art_dictionary()
 art_make(BASENAME_ONLY
          MODULE_LIBRARIES

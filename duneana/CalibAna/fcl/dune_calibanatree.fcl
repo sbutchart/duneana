@@ -9,8 +9,8 @@ dune_calibanatree: {
   PFPproducer: "pandora"
   G4producer: ""
   SimChannelproducer: ""
-  HITproducer: "cluster3DCryoE"
-  RawDigitproducers: ["daqTPCROI:PHYSCRATEDATATPCEW", "daqTPCROI:PHYSCRATEDATATPCEE"]
+  HITproducer: "fasthit" # for standard sims, use gaushit, or pandora
+  RawDigitproducers: ["daq"]
   RequireT0: false
   HitRawDigitsTickCollectWidth: 200
   DoTailFit: false
@@ -19,7 +19,7 @@ dune_calibanatree: {
 }
 
 dune_calibanatree_selectall: {
-  tool_type: TrackCaloSkimmerSelectAllTrack
+  tool_type: CalibAnaTreeSelectAllTracks
   RequireT0: false
 }
 
@@ -28,7 +28,7 @@ dune_calibanatree.SelectionTools: [@local::dune_calibanatree_selectall]
 
 dune_calibanatree_mc: @local::dune_calibanatree
 dune_calibanatree_mc.G4producer: "largeant"
-dune_calibanatree_mc.SimChannelproducer: "tpcrawdecoder"
+dune_calibanatree_mc.SimChannelproducer: "largeant" # before factorisation, use tpcrawdecoder for factorised sim scheme
 
 
 END_PROLOG

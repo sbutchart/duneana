@@ -110,7 +110,7 @@ dune::CalibAnaTree::CalibAnaTree(fhicl::ParameterSet const& p)
   fTrack = new dune::TrackInfo();
 
   art::ServiceHandle<art::TFileService> tfs;
-  fTree = tfs->make<TTree>("TrackCaloSkim", "Calo Tree");
+  fTree = tfs->make<TTree>("CalibAnaTree", "CalibAna Tree");
   fTree->Branch("trk", &fTrack);
 }
 

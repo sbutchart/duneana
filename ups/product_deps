@@ -244,16 +244,15 @@ defaultqual	e26
 # * It is an error for more than one non-(<qual-trigger> == "-default-")
 #   entry to match for a given product.
 #
-####################################
-product		version		qual	flags		<table_format=2>
-duneanaobj	v02_04_00a	-
-duneopdet	v09_83_01d00	-
-dunereco	v09_83_01d00	-
-larcoreobj	v09_09_01	-
-cetmodules	v3_22_02	-	only_for_build
+product          version
+cetmodules	 v3_24_01	-	only_for_build
+dunereco         v09_89_01d00
+duneopdet        v09_89_01d00
+duneanaobj       v02_04_00c
 end_product_list
 ####################################
 
+<<<<<<< HEAD
 ####################################
 # Qualifier table.
 #
@@ -304,12 +303,12 @@ end_product_list
 #   *required* unless the only_for_build flag is specified, in which
 #   case it is optional.
 #
-####################################
-qualifier	dunereco	duneopdet	duneanaobj	larcoreobj	notes
-c14:debug	c14:debug	c14:debug	c14:debug	c14:debug
-c14:prof	c14:prof	c14:prof	c14:prof	c14:prof
-e26:debug	e26:debug	e26:debug	e26:debug	e26:debug
-e26:prof	e26:prof	e26:prof	e26:prof	e26:prof
+
+qualifier      dunereco   duneopdet  duneanaobj   notes
+c14:debug      c14:debug  c14:debug  c14:debug  
+c14:prof       c14:prof   c14:prof   c14:prof   
+e26:debug      e26:debug  e26:debug  e26:debug  
+e26:prof       e26:prof   e26:prof   e26:prof   
 end_qualifier_list
 ####################################
 

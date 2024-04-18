@@ -37,20 +37,20 @@ namespace solar
       for (art::Ptr<recob::OpHit> PDSHit : ClusterCopy)
       {
         NHit++;
-        TimeSum += PDSHit->PeakTime();
         PE += PDSHit->PE();
         if (PDSHit->PE() > MaxPE)
           MaxPE = PDSHit->PE();
         PEperOpDet.push_back(PDSHit->PE());
+        TimeSum += PDSHit->PeakTime() * PDSHit->PE();
         auto OpHitXYZ = geo->OpDetGeoFromOpChannel(PDSHit->OpChannel()).GetCenter();
-        XSum += OpHitXYZ.X();
-        YSum += OpHitXYZ.Y();
-        ZSum += OpHitXYZ.Z();
+        XSum += OpHitXYZ.X() * PDSHit->PE();
+        YSum += OpHitXYZ.Y() * PDSHit->PE();
+        ZSum += OpHitXYZ.Z() * PDSHit->PE();
       }
-      Time = TimeSum / ClusterCopy.size();
-      X = XSum / ClusterCopy.size();
-      Y = YSum / ClusterCopy.size();
-      Z = ZSum / ClusterCopy.size();
+      Time = TimeSum / PE;
+      X = XSum / PE;
+      Y = YSum / PE;
+      Z = ZSum / PE;
       for (art::Ptr<recob::OpHit> PDSHit : ClusterCopy)
       {
         auto OpHitXYZ = geo->OpDetGeoFromOpChannel(PDSHit->OpChannel()).GetCenter();

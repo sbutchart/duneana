@@ -1,7 +1,8 @@
 art_make( MODULE_LIBRARIES 
 	  larcorealg::Geometry
 	  larcore::Geometry_Geometry_service
-	  larsim::Simulation nug4::ParticleNavigation 
+	  larsim::Simulation 
+	  nug4::ParticleNavigation 
 	  lardataobj::Simulation
 	  larsim::MCCheater_BackTrackerService_service
 	  larsim::MCCheater_ParticleInventoryService_service
@@ -12,29 +13,29 @@ art_make( MODULE_LIBRARIES
 	  lardataobj::RecoBase
 	  lardataobj::AnalysisBase
 	  lardata::RecoObjects
-    	  lardata::ArtDataHelper
+          lardata::ArtDataHelper
+          lardataalg::DetectorInfo
 	  larreco::RecoAlg
 	  larpandora::LArPandoraInterface
 	  dunecore::SignalShapingServiceDUNE10kt_service
 	  dunecore::SignalShapingServiceDUNE35t_service
           nusimdata::SimulationBase
-	  dunereco::AnaUtils
-          art::Framework_Core
-	  art::Framework_Principal
-	  art::Framework_Services_Registry
-	  art_root_io::tfile_support
+          ART_FRAMEWORK_CORE
+	  ART_FRAMEWORK_PRINCIPAL
+	  ART_FRAMEWORK_SERVICES_REGISTRY
+	  ART_ROOT_IO_TFILE_SUPPORT
 	  ROOT::Core
-	  art_root_io::TFileService_service
-	  art::Persistency_Common
-	  art::Persistency_Provenance
-	  art::Utilities canvas::canvas
+	  ART_ROOT_IO_TFILESERVICE_SERVICE
+	  art::Persistency_Common canvas
+	  art::Persistency_Provenance canvas
+	  art::Utilities canvas
 	  messagefacility::MF_MessageLogger
 	  fhiclcpp::fhiclcpp
-	  cetlib::cetlib cetlib_except::cetlib_except
-          ROOT::Geom
-          ROOT::XMLIO
-          ROOT::Gdml
-	  ROOT::Core ROOT::Hist ROOT::Tree
+	  cetlib::cetlib cetlib_except
+          ROOT_GEOM
+          ROOT_XMLIO
+          ROOT_GDML
+	  ROOT_BASIC_LIB_LIST
         )
 
 install_headers()

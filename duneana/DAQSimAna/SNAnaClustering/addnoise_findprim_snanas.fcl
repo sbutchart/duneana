@@ -1,4 +1,5 @@
-# addnoise_findprim_daqsimanas_refactored.fcl
+# addnoise_findprim_daqsimanas.fcl
+# configured for refactored workflow, SimWireDUNE
 
 # Read in (presumably noise-free) waveforms, add noise and pedestals,
 # then find trigger primitives on the (now noisy) waveforms, and save
@@ -126,7 +127,6 @@ physics.analyzers.snanatrigprim60sig.HitLabel: "trigprim60sig"
 # physics.analyzers.snanatrigprim800.SaveIDEs: true
 
 # =====================================================================
-# You probably won't need to change anything below here
 
 # Shut up the backtracker
 services.message.destinations.LogStandardOut.categories.BackTracker.limit: 0

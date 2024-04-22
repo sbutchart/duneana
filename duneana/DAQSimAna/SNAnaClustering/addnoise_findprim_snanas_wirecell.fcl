@@ -1,6 +1,7 @@
-# addnoise_findprim_daqsimanas_refactored.fcl
+# addnoise_findprim_daqsimanas_wirecell.fcl
+# EXPERIMENTAL! Use at your peril
 
-#include "SNAna2.fcl"
+#include "SNAna.fcl"
 #include "trigprim.fcl"
 BEGIN_PROLOG
 trigprim_snana: {
@@ -13,7 +14,7 @@ END_PROLOG
 #include "detsim_dune10kt_1x2x6_notpcsigproc.fcl"
 
 process_name: PrimSim
-services.TFileService: { fileName: "SNAna2_refactored_plus_trigprim_multithreshold.root" }
+services.TFileService: { fileName: "SNAna_refactored_plus_trigprim_multithreshold.root" }
 
 # Define and configure some modules to do work on each event.
 # First modules are defined; they are scheduled later.
@@ -71,5 +72,5 @@ services.message.destinations.LogStandardOut.categories.BackTracker.limit: 0
 services.message.destinations.LogStandardError.categories.BackTracker.limit: 0
 
 # Display all the INFO message for SNAna_module
-services.message.destinations.LogStandardOut.categories.SNAna2_module.limit:-1
+services.message.destinations.LogStandardOut.categories.SNAna_module.limit:-1
 

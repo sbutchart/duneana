@@ -35,9 +35,8 @@ art_make( BASENAME_ONLY MODULE_LIBRARIES
   art::Persistency_Provenance
   art::Utilities canvas::canvas
   messagefacility::MF_MessageLogger
-<<<<<<< HEAD
-  cetlib::cetlib cetlib_except
-  ROOT_BASIC_LIB_LIST
+  cetlib::cetlib cetlib_except::cetlib_except
+  ROOT::Core ROOT::Hist ROOT::Tree
   )
 
 install_fhicl()

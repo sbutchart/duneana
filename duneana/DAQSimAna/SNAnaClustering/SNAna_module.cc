@@ -56,15 +56,15 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-class SNAna2 : public art::EDAnalyzer {
+class SNAna : public art::EDAnalyzer {
 
 public:
-  explicit SNAna2(fhicl::ParameterSet const & p);
+  explicit SNAna(fhicl::ParameterSet const & p);
 
-  SNAna2(SNAna2 const &) = delete;
-  SNAna2(SNAna2 &&) = delete;
-  SNAna2 & operator = (SNAna2 const &) = delete;
-  SNAna2 & operator = (SNAna2 &&) = delete;
+  SNAna(SNAna const &) = delete;
+  SNAna(SNAna &&) = delete;
+  SNAna & operator = (SNAna const &) = delete;
+  SNAna & operator = (SNAna &&) = delete;
 
   void analyze(art::Event const & evt) override;
   void reconfigure(fhicl::ParameterSet const & p);
@@ -259,13 +259,13 @@ private:
 
 };
 
-SNAna2::SNAna2(fhicl::ParameterSet const & p):EDAnalyzer(p),
-                                            fname("SNAna2_module")
+SNAna::SNAna(fhicl::ParameterSet const & p):EDAnalyzer(p),
+                                            fname("SNAna_module")
 {
   this->reconfigure(p);
 }
 
-void SNAna2::reconfigure(fhicl::ParameterSet const & p)
+void SNAna::reconfigure(fhicl::ParameterSet const & p)
 {
 
   fRawDigitLabel      = p.get<std::string> ("RawDigitLabel"     );
@@ -289,7 +289,7 @@ void SNAna2::reconfigure(fhicl::ParameterSet const & p)
 
 }
 
-void SNAna2::beginJob()
+void SNAna::beginJob()
 {
   firstEv = true;
   art::ServiceHandle<art::TFileService> tfs;
@@ -428,7 +428,7 @@ void SNAna2::beginJob()
 
 }
 
-void SNAna2::analyze(art::Event const & evt)
+void SNAna::analyze(art::Event const & evt)
 {
   ResetVariables();
 
@@ -526,7 +526,7 @@ void SNAna2::analyze(art::Event const & evt)
               True_MarlSample.push_back(ThisTr.SamplingMode);
             }
           } catch (...) {
-            mf::LogDebug(fname) << "Didnt find SN truth (few things wont available):\n"
+            mf::LogDebug(fname) << "Didn't find SN truth (few things weren't available):\n"
                                 << " - MarlTime\n"
                                 << " - MarlWeight\n"
                                 << " - MarlSample\n";
@@ -863,7 +863,7 @@ void SNAna2::analyze(art::Event const & evt)
   fSNAnaTree->Fill();
 }
 
-void SNAna2::endJob()
+void SNAna::endJob()
 {
   mf::LogDebug(fname) << firstCatch << " " << secondCatch << " " << thirdCatch << std::endl;
 
@@ -878,7 +878,7 @@ void SNAna2::endJob()
 
 }
 
-void SNAna2::ResetVariables()
+void SNAna::ResetVariables()
 {
 
   Run = SubRun = Event = -1;
@@ -1010,7 +1010,7 @@ void SNAna2::ResetVariables()
 
 }
 
-void SNAna2::FillTruth(const art::FindManyP<simb::MCParticle> Assn,
+void SNAna::FillTruth(const art::FindManyP<simb::MCParticle> Assn,
                        const art::Handle<std::vector<simb::MCTruth>>& Hand,
                        const int type) {
 
@@ -1038,7 +1038,7 @@ void SNAna2::FillTruth(const art::FindManyP<simb::MCParticle> Assn,
   }
 }
 
-void SNAna2::FillMyMaps(std::map< int, simb::MCParticle> &MyMap,
+void SNAna::FillMyMaps(std::map< int, simb::MCParticle> &MyMap,
                         art::FindManyP<simb::MCParticle> Assn,
                         art::Handle< std::vector<simb::MCTruth> > Hand,
                         std::map<int, int>* indexMap) {
@@ -1052,7 +1052,7 @@ void SNAna2::FillMyMaps(std::map< int, simb::MCParticle> &MyMap,
   return;
 }
 
-void SNAna2::SaveNeighbourADC(int channel,
+void SNAna::SaveNeighbourADC(int channel,
                               art::Handle< std::vector<raw::RawDigit> >rawDigitsVecHandle,
                               std::set<int>badChannels,
                               recob::Hit const& ThisHit) {
@@ -1140,7 +1140,7 @@ void SNAna2::SaveNeighbourADC(int channel,
   }
 }
 
-int SNAna2::WhichParType( int TrID )
+int SNAna::WhichParType( int TrID )
 {
   int ThisPType = type_map["Other"];
   auto const& it=trkIDToPType.find(std::abs(TrID));
@@ -1150,7 +1150,7 @@ int SNAna2::WhichParType( int TrID )
   return ThisPType;
 }
 
-void SNAna2::SaveIDEs(art::Event const & evt)
+void SNAna::SaveIDEs(art::Event const & evt)
 {
   auto allParticles = evt.getValidHandle<std::vector<simb::MCParticle> >(fGEANTLabel);
   art::FindMany<simb::MCTruth> assn(allParticles,evt,fGEANTLabel);
@@ -1235,7 +1235,7 @@ void SNAna2::SaveIDEs(art::Event const & evt)
   } // loop over SimChannels
 }
 
-bool SNAna2::InMyMap( int TrID, std::map< int, simb::MCParticle> ParMap )
+bool SNAna::InMyMap( int TrID, std::map< int, simb::MCParticle> ParMap )
 {
   std::map<int, simb::MCParticle>::iterator ParIt;
   ParIt = ParMap.find( std::abs(TrID) );
@@ -1245,4 +1245,4 @@ bool SNAna2::InMyMap( int TrID, std::map< int, simb::MCParticle> ParMap )
     return false;
 }
 
-DEFINE_ART_MODULE(SNAna2)
+DEFINE_ART_MODULE(SNAna)

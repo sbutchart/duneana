@@ -10,7 +10,7 @@ standard_snana:
   OpHitModuleLabel:     "ophit"
 
   SaveNeighbourADCs:    true
-  SaveTruth:            true # save all the generated particle
+  SaveTruth:            true   # save all the generated particles
   SaveIDEs:             false
   SaveTPC:              true
   SavePDS:              true

@@ -2,34 +2,30 @@ add_subdirectory(fcl)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 art_make(BASENAME_ONLY
     LIB_LIBRARIES
-      ${ROOT_CORE}
-      ${ROOT_EVE}
-      cetlib_except
+      cetlib_except::cetlib_except
       cetlib::cetlib
-      lardata_RecoObjects 
-      lardata_Utilities
-      lardataobj_RawData
+      lardata::RecoObjects 
+      lardata::Utilities
+      lardataobj::RawData
       larcorealg::Geometry
-      larcorealg_Geometry
-      lardata_ArtDataHelper
+      lardata::ArtDataHelper
       larcore::Geometry_Geometry_service
       messagefacility::MF_MessageLogger
       art::Persistency_Common
       art::Persistency_Provenance
       art::Utilities 
-      canvas
-      ART_PERSISTENCY_COMMON
-      ART_PERSISTENCY_PROVENANCE
-      ART_UTILITIES
+      canvas::canvas
+      art::Persistency_Common
+      art::Persistency_Provenance
+      art::Utilities
     SERVICE_LIBRARIES
-      duneana_SolarNuAna
-      ${ART_ROOT_IO_ROOTINPUT_SOURCE}
+      duneana::SolarNuAna
     MODULE_LIBRARIES
       dunecore::DAQTriggerSim_TriggerDataProducts
       larcore::Geometry_Geometry_service
-      lardata_RecoObjects
-      lardata_Utilities
-      lardata_ArtDataHelper
+      lardata::RecoObjects
+      lardata::Utilities
+      lardata::ArtDataHelper
       lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
       larcorealg::Geometry
       lardataobj::RawData
@@ -40,24 +36,21 @@ art_make(BASENAME_ONLY
       larsim::MCCheater_ParticleInventoryService_service
       nug4::ParticleNavigation
       nusimdata::SimulationBase
-      ART_FRAMEWORK_CORE
-      ART_FRAMEWORK_PRINCIPAL
-      ART_FRAMEWORK_SERVICES_REGISTRY
-      ART_ROOT_IO_TFILE_SUPPORT
+      art::Framework_Core
+      art::Framework_Principal
+      art::Framework_Services_Registry
+      art_root_io::tfile_support
       ROOT::Core
-      ART_ROOT_IO_TFILESERVICE_SERVICE
+      art_root_io::TFileService_service
       art::Persistency_Common
       art::Persistency_Provenance
       art::Utilities 
-      canvas
-      ART_PERSISTENCY_COMMON
-      ART_PERSISTENCY_PROVENANCE
-      ART_UTILITIES
+      canvas::canvas
       messagefacility::MF_MessageLogger
       cetlib::cetlib 
-      cetlib_except
-      duneana_SolarNuAna
-      ROOT_BASIC_LIB_LIST
+      cetlib_except::cetlib_except
+      duneana::SolarNuAna
+      ROOT::Tree
 )
 
 install_headers()

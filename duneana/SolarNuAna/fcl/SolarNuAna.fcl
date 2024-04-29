@@ -31,11 +31,15 @@ BEGIN_PROLOG
     ClusterInd0MatchTime:    0.00         # Wirecell seems to have made this obsolete.
     ClusterInd1MatchTime:    0.00         # Wirecell seems to have made this obsolete.
     
-    ClusterPreselectionNHit: 0            # Min number of hits to preselect a cluster.
+    ClusterPreselectionNHit:  0           # Min number of hits to preselect a cluster.
     ClusterPreselectionTrack: false       # If true, the cluster must be associated with a track to be saved.
 
     MinClusterCharge:        0.           # Min Charge for adj. clusters in [ADCxTick].
     AdjClusterRad:           100.         # Radius to search for adj. clusters in [cm] units.
+
+    GenerateAdjOpFlash:      true         # Generate adjacent OpFlashes.
+    OpFlashAlgoTime:         15           # Time window to look for OpFlashes in [tick] units.
+    OpFlashAlgoRad:          100          # Distance to look for OpFlashes in [cm] units.
 
     AdjOpFlashTime:          4500         # Time window to look for adjacent flashes in [tick] units should be one full drift length.
     AdjOpFlashY:             200.         # Y distance to search for adj. OpFlashes reconstructed in [cm] units.
@@ -43,8 +47,8 @@ BEGIN_PROLOG
     AdjOpFlashMaxPERatioCut: 1.00         # Cut on the maximum OpHit PE contribution to the total OpFlash PE.
     AdjOpFlashMinPECut:      20.0         # Cut on the minimum OpHit PE.
 
-    SaveMarleyEDep:          true        # Save the energy deposition of the marley energy deposition in the LAr.
-    SaveSignalOpHits:        true        # Save the OpHits that are associated with the signal.
+    SaveMarleyEDep:          false        # Save the energy deposition of the marley energy deposition in the LAr.
+    SaveSignalOpHits:        false        # Save the OpHits that are associated with the signal.
   }
 
   legacy_solar_nu_ana_hd_v2: @local::solar_nu_ana_hd

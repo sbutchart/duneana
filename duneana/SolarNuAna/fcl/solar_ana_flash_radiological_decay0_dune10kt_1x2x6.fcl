@@ -13,8 +13,8 @@ physics.analyzers.solarnuana.SaveMarleyEDep: false
 # Select the coustom flash production and choose the parameters
 physics.analyzers.solarnuana.GenerateAdjOpFlash: true
 physics.analyzers.solarnuana.OpFlashAlgoTime: 10
-physics.analyzers.solarnuana.OpFlashAlgoRad: 200
+physics.analyzers.solarnuana.OpFlashAlgoRad: 300
 physics.analyzers.solarnuana.OpFlashAlgoPE: 1.5
 physics.analyzers.solarnuana.OpFlashAlgoTriggerPE: 30
 physics.analyzers.solarnuana.OpFlashAlgoCentroid: false
-physics.analyzers.solarnuana.OpFlashAlgoDebug: true
+physics.analyzers.solarnuana.OpFlashAlgoDebug: false

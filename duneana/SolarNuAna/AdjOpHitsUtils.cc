@@ -290,9 +290,9 @@ namespace solar
       } // while ( LastSize != NewSize )
 
       int NumAdjColHits = AdjHitVec.size();
-      float SummedADCInt = 0;
-      for (const auto &PDSHit : AdjHitVec)
-        SummedADCInt += PDSHit->PE();
+      // float SummedADCInt = 0;   // commented out to make Clang happy
+      //for (art::Ptr<recob::OpHit> PDSHit : AdjHitVec)
+      // SummedADCInt += PDSHit->PE();
 
       if (HeavDebug)
         std::cerr << "After that loop, I had " << NumAdjColHits << " adjacent collection plane hits." << std::endl;

@@ -76,7 +76,6 @@ namespace solar
     bool InMyMap(int TrID, std::map<int, float> TrackIDMap);
     bool InMyMap(int TrID, std::map<int, simb::MCParticle> ParMap);
     void FillMyMaps(std::map<int, simb::MCParticle> &MyMap, art::FindManyP<simb::MCParticle> Assn, art::ValidHandle<std::vector<simb::MCTruth>> Hand);
-    // void CalcAdjHits(std::vector<recob::Hit> MyVec, std::vector<std::vector<recob::Hit>> &Clusters, TH1I *MyHist, TH1F *MyADCIntHist, bool HeavDebug);
     void PrintInColor(std::string MyString, int MyColor, std::string Type = "Info");
     int GetColor(std::string MyString);
     std::string str(int MyInt);
@@ -87,6 +86,7 @@ namespace solar
     std::string str(std::vector<double> MyVec, int MyPrecision = 2);
     int supress_stdout();
     void resume_stdout(int fd);
+
     // --- Our fcl parameter labels for the modules that made the data products
     std::string fRawDigitLabel, fHitLabel, fTrackLabel, fOpHitLabel, fOpFlashLabel, fGEANTLabel;
 
@@ -1306,8 +1306,8 @@ namespace solar
           {
             continue;
           }
-          // Instead of a circular cut, we apply an elliptical cut (dy/a)^2+(dz/b)^2<1
           // if (sqrt(pow(MVecRecY[i] - OpFlashY[j], 2) + pow(MVecRecZ[i] - OpFlashZ[j], 2)) > fAdjOpFlashRad)
+          // Instead of a circular cut, we apply an elliptical cut (dy/a)^2+(dz/b)^2<1
           if (pow(abs(MVecRecY[i] - OpFlashY[j])/fAdjOpFlashY, 2) + pow(abs(MVecRecZ[i] - OpFlashZ[j])/fAdjOpFlashZ, 2) > 1)
           {
             continue;

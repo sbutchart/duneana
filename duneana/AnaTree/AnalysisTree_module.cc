@@ -82,6 +82,7 @@
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "duneopdet/OpticalDetector/OpFlashSort.h"
 #include "dunereco/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
+#include "dunereco/FDSensOpt/FDSensOptData/AngularRecoOutput.h"
 
 #include "lardata/ArtDataHelper/MVAReader.h"
 
@@ -490,6 +491,7 @@ namespace dune {
         tdSpacePoint = 0x20000,
         tdCnn = 0x40000,
         tdnuEnReco = 0x80000,
+        tdnuAngleReco = 0x100000,
         tdDefault = 0
         }; // DataBits_t
 
@@ -592,6 +594,23 @@ namespace dune {
     Float_t RecoHadEnNumu_range;      // Hadronic energy, keep this as by range you always have hadronic 
     Float_t RecoLepEnNumu_mcs_chi2;   // Lepton energy using mcs chi2 method (GeV)
     Float_t RecoLepEnNumu_mcs_llhd;   // Lepton energy using mcs chi2 method (GeV)
+
+    // Reconstructed neutrino direction
+    Float_t Nue_vtxx_angle;     // Reconsctruced vertex location x
+    Float_t Nue_vtxy_angle;     // Reconsctruced vertex location y
+    Float_t Nue_vtxz_angle;     // Reconsctruced vertex location z
+    Float_t Nue_dcosx_angle;    // Reconstructed direction along x-axis
+    Float_t Nue_dcosy_angle;    // Reconstructed direction along y-axis
+    Float_t Nue_dcosz_angle;    // Reconstructed direction along z-axis
+    Int_t AngleRecoMethodNue;   // Method use for angle nue angle reconstruction
+
+    Float_t Numu_vtxx_angle;    // Reconsctruced vertex location x
+    Float_t Numu_vtxy_angle;    // Reconsctruced vertex location y
+    Float_t Numu_vtxz_angle;    // Reconsctruced vertex location z
+    Float_t Numu_dcosx_angle;   // Reconstructed direction along x-axis
+    Float_t Numu_dcosy_angle;   // Reconstructed direction along y-axis
+    Float_t Numu_dcosz_angle;   // Reconstructed direction along z-axis
+    Int_t AngleRecoMethodNumu;  // Method use for angle numu angle reconstruction
 
     //Cluster Information
     Short_t nclusters;				      //number of clusters in a given event
@@ -1002,6 +1021,9 @@ namespace dune {
     /// Returns whether we have NuEnReco info data
     bool hasNuEnRecoInfo() const { return bits & tdnuEnReco; }
 
+    /// Returns whether we have NuAngleReco info data
+    bool hasNuEnAngleInfo() const { return bits & tdnuAngleReco; }
+
     /// Returns whether we have PFParticle data
     bool hasPFParticleInfo() const { return bits & tdPFParticle; }
 
@@ -1302,6 +1324,8 @@ namespace dune {
     std::string fEnergyRecoNumuMCSChi2Label;
     std::string fEnergyRecoNumuMCSLLHDLabel;
     std::string fEnergyRecoNCLabel;
+    std::string fAngleRecoNueLabel;
+    std::string fAngleRecoNumuLabel;
     std::vector<std::string> fShowerModuleLabel;
     std::vector<std::string> fCalorimetryModuleLabel;
     std::vector<std::string> fParticleIDModuleLabel;
@@ -1324,6 +1348,7 @@ namespace dune {
     bool fSaveTrackInfo; ///whether to extract and save Track information
     bool fSaveVertexInfo; ///whether to extract and save Vertex information
     bool fSaveNuRecoEnergyInfo; ///whether to extract and save Neutrino reconstructed energy information. Call products first!
+    bool fSaveNuRecoAngleInfo; ///whether to extract and save Neutrino reconstructed angle information. Call products first!
     bool fSaveClusterInfo;  ///whether to extract and save Cluster information
     bool fSavePandoraNuVertexInfo; ///whether to extract and save nu vertex information from Pandora
     bool fSaveFlashInfo;  ///whether to extract and save Flash information
@@ -1382,6 +1407,7 @@ namespace dune {
         fData->SetBits(AnalysisTreeDataStruct::tdTrack,  !fSaveTrackInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdVertex, !fSaveVertexInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdnuEnReco, !fSaveNuRecoEnergyInfo);
+        fData->SetBits(AnalysisTreeDataStruct::tdnuAngleReco, !fSaveNuRecoAngleInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdAuxDet, !fSaveAuxDetInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdPFParticle, !fSavePFParticleInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdSpacePoint, !fSaveSpacePointSolverInfo);
@@ -2414,6 +2440,22 @@ void dune::AnalysisTreeDataStruct::ClearLocalData() {
   RecoLepEnNumu_mcs_chi2 = -99999.;
   RecoLepEnNumu_mcs_llhd = -99999.;
 
+  Nue_vtxx_angle  = -99999.;
+  Nue_vtxy_angle  = -99999.;
+  Nue_vtxz_angle  = -99999.;
+  Nue_dcosx_angle = -99999.;
+  Nue_dcosy_angle = -99999.;
+  Nue_dcosz_angle = -99999.;
+  AngleRecoMethodNue   = -99999;
+
+  Numu_vtxx_angle  = -99999.;
+  Numu_vtxy_angle  = -99999.;
+  Numu_vtxz_angle  = -99999.;
+  Numu_dcosx_angle = -99999.;
+  Numu_dcosy_angle = -99999.;
+  Numu_dcosz_angle = -99999.;
+  AngleRecoMethodNumu   = -99999;
+
   mcevts_truth = -99999;
   mcevts_truthcry = -99999;
   std::fill(nuPDG_truth, nuPDG_truth + sizeof(nuPDG_truth)/sizeof(nuPDG_truth[0]), -99999.);
@@ -3015,6 +3057,28 @@ void dune::AnalysisTreeDataStruct::SetAddresses(
 
   }
 
+
+
+
+  if (hasNuEnAngleInfo()){
+    CreateBranch("Nue_vtxx_angle", &Nue_vtxx_angle, "Nue_vtxx_angle/F");
+    CreateBranch("Nue_vtxy_angle", &Nue_vtxy_angle, "Nue_vtxy_angle/F");
+    CreateBranch("Nue_vtxz_angle", &Nue_vtxz_angle, "Nue_vtxz_angle/F");
+    CreateBranch("Nue_dcosx_angle", &Nue_dcosx_angle, "Nue_dcosx_angle/F");
+    CreateBranch("Nue_dcosy_angle", &Nue_dcosy_angle, "Nue_dcosy_angle/F");
+    CreateBranch("Nue_dcosz_angle", &Nue_dcosz_angle, "Nue_dcosz_angle/F");
+    CreateBranch("AngleRecoMethodNue", &AngleRecoMethodNue, "AngleRecoMethodNue/I");
+
+    CreateBranch("Numu_vtxx_angle", &Numu_vtxx_angle, "Numu_vtxx_angle/F");
+    CreateBranch("Numu_vtxy_angle", &Numu_vtxy_angle, "Numu_vtxy_angle/F");
+    CreateBranch("Numu_vtxz_angle", &Numu_vtxz_angle, "Numu_vtxz_angle/F");
+    CreateBranch("Numu_dcosx_angle", &Numu_dcosx_angle, "Numu_dcosx_angle/F");
+    CreateBranch("Numu_dcosy_angle", &Numu_dcosy_angle, "Numu_dcosy_angle/F");
+    CreateBranch("Numu_dcosz_angle", &Numu_dcosz_angle, "Numu_dcosz_angle/F");
+    CreateBranch("AngleRecoMethodNumu", &AngleRecoMethodNumu, "AngleRecoMethodNumu/I");
+  }
+
+
   if (hasClusterInfo()){
     CreateBranch("nclusters",&nclusters,"nclusters/S");
     CreateBranch("clusterId", clusterId, "clusterId[nclusters]/S");
@@ -3520,6 +3584,8 @@ dune::AnalysisTree::AnalysisTree(fhicl::ParameterSet const& pset) :
   fEnergyRecoNumuMCSChi2Label   (pset.get< std::string >("EnergyRecoNumuMCSChi2Label")),
   fEnergyRecoNumuMCSLLHDLabel   (pset.get< std::string >("EnergyRecoNumuMCSLLHDLabel")),
   fEnergyRecoNCLabel        (pset.get< std::string >("EnergyRecoNCLabel")),
+  fAngleRecoNueLabel        (pset.get< std::string >("AngleRecoNueLabel")),
+  fAngleRecoNumuLabel        (pset.get< std::string >("AngleRecoNumuLabel")),
   fShowerModuleLabel        (pset.get< std::vector<std::string> >("ShowerModuleLabel")),
   fCalorimetryModuleLabel   (pset.get< std::vector<std::string> >("CalorimetryModuleLabel")),
   fParticleIDModuleLabel    (pset.get< std::vector<std::string> >("ParticleIDModuleLabel")   ),
@@ -3542,6 +3608,7 @@ dune::AnalysisTree::AnalysisTree(fhicl::ParameterSet const& pset) :
   fSaveTrackInfo	    (pset.get< bool >("SaveTrackInfo", false)),
   fSaveVertexInfo	    (pset.get< bool >("SaveVertexInfo", false)),
   fSaveNuRecoEnergyInfo     (pset.get< bool >("SaveNuRecoEnergyInfo", false)),
+  fSaveNuRecoAngleInfo     (pset.get< bool >("SaveNuRecoAngleInfo", false)),
   fSaveClusterInfo	    (pset.get< bool >("SaveClusterInfo", false)),
   fSavePandoraNuVertexInfo        (pset.get< bool >("SavePandoraNuVertexInfo", false)),
   fSaveFlashInfo            (pset.get< bool >("SaveFlashInfo", false)),
@@ -4303,6 +4370,40 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
       std::cerr << "Warning! No product found with label: " << fEnergyRecoNCLabel << std::endl;
   } // end fSaveNuRecoEnergyInfo
 
+
+  if(fSaveNuRecoAngleInfo){
+    auto anglereconuein = evt.getHandle<dune::AngularRecoOutput>(fAngleRecoNueLabel);
+    auto anglereconumuin = evt.getHandle<dune::AngularRecoOutput>(fAngleRecoNumuLabel);
+
+    if ( !anglereconuein.failedToGet() )
+	{
+	  fData->Nue_vtxx_angle		= anglereconuein->fRecoVertex.X();
+	  fData->Nue_vtxy_angle		= anglereconuein->fRecoVertex.Y();
+	  fData->Nue_vtxz_angle		= anglereconuein->fRecoVertex.Z();
+	  fData->Nue_dcosx_angle	   = anglereconuein->fRecoDirection.X();
+	  fData->Nue_dcosy_angle	   = anglereconuein->fRecoDirection.Y();
+	  fData->Nue_dcosz_angle	   = anglereconuein->fRecoDirection.Z();
+	  fData->AngleRecoMethodNue		= anglereconuein->recoMethodUsed;
+	}
+    else{
+      std::cerr << "Warning! No product found with label: " << fAngleRecoNueLabel << std::endl;
+    }
+
+    if ( !anglereconumuin.failedToGet() )
+    {
+	  fData->Numu_vtxx_angle        = anglereconumuin->fRecoVertex.X();
+	  fData->Numu_vtxy_angle        = anglereconumuin->fRecoVertex.Y();
+	  fData->Numu_vtxz_angle        = anglereconumuin->fRecoVertex.Z();
+	  fData->Numu_dcosx_angle       = anglereconumuin->fRecoDirection.X();
+	  fData->Numu_dcosy_angle       = anglereconumuin->fRecoDirection.Y();
+	  fData->Numu_dcosz_angle       = anglereconumuin->fRecoDirection.Z();
+	  fData->AngleRecoMethodNumu        = anglereconumuin->recoMethodUsed;
+    }
+    else{
+      std::cerr << "Warning! No product found with label: " << fAngleRecoNumuLabel << std::endl;
+    }
+
+  } // end fSaveNuRecoEnergyInfo
 
   if (fSaveClusterInfo){
     fData->nclusters = (int) NClusters;

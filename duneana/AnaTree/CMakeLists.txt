@@ -22,6 +22,7 @@ art_make( MODULE_LIBRARIES
           duneopdet::OpticalDetector
           nusimdata::SimulationBase
           art::Framework_Core
+	  dunereco::CVN_func
 	  art::Framework_Principal
 	  art::Framework_Services_Registry
 	  art_root_io::tfile_support

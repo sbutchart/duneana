@@ -489,7 +489,7 @@ namespace dune {
         tdProto = 0x10000,
         tdSpacePoint = 0x20000,
         tdCnn = 0x40000,
-        tdnuReco = 0x80000,
+        tdnuEnReco = 0x80000,
         tdDefault = 0
         }; // DataBits_t
 
@@ -999,8 +999,8 @@ namespace dune {
     /// Returns whether we have Vertex data
     bool hasVertexInfo() const { return bits & tdVertex; }
 
-    /// Returns whether we have Vertex data
-    bool hasNuRecoInfo() const { return bits & tdnuReco; }
+    /// Returns whether we have NuEnReco info data
+    bool hasNuEnRecoInfo() const { return bits & tdnuEnReco; }
 
     /// Returns whether we have PFParticle data
     bool hasPFParticleInfo() const { return bits & tdPFParticle; }
@@ -1381,7 +1381,7 @@ namespace dune {
         fData->SetBits(AnalysisTreeDataStruct::tdPandoraNuVertex,!fSavePandoraNuVertexInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdTrack,  !fSaveTrackInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdVertex, !fSaveVertexInfo);
-        fData->SetBits(AnalysisTreeDataStruct::tdnuReco, !fSaveNuRecoEnergyInfo);
+        fData->SetBits(AnalysisTreeDataStruct::tdnuEnReco, !fSaveNuRecoEnergyInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdAuxDet, !fSaveAuxDetInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdPFParticle, !fSavePFParticleInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdSpacePoint, !fSaveSpacePointSolverInfo);
@@ -2994,7 +2994,7 @@ void dune::AnalysisTreeDataStruct::SetAddresses(
     CreateBranch("nuvtxpdg", nuvtxpdg, "nuvtxpdg[nnuvtx]/S");
   }
   
-  if (hasNuRecoInfo()){
+  if (hasNuEnRecoInfo()){
     CreateBranch("Ev_reco_nue", &Ev_reco_nue, "Ev_reco_nue/F");
     CreateBranch("RecoLepEnNue", &RecoLepEnNue, "RecoLepEnNue/F");
     CreateBranch("RecoHadEnNue", &RecoHadEnNue, "RecoHadEnNue/F");

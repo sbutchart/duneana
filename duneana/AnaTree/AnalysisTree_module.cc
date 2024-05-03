@@ -612,6 +612,16 @@ namespace dune {
     Float_t Numu_dcosz_angle;   // Reconstructed direction along z-axis
     Int_t AngleRecoMethodNumu;  // Method use for angle numu angle reconstruction
 
+    Float_t Nue_pfp_dcosx_angle;    // Reconstructed direction along x-axis
+    Float_t Nue_pfp_dcosy_angle;    // Reconstructed direction along y-axis
+    Float_t Nue_pfp_dcosz_angle;    // Reconstructed direction along z-axis
+    Int_t AngleRecoMethodNuePFP;   // Method use for angle nue angle reconstruction using all PFP
+
+    Float_t Numu_pfp_dcosx_angle;   // Reconstructed direction along x-axis
+    Float_t Numu_pfp_dcosy_angle;   // Reconstructed direction along y-axis
+    Float_t Numu_pfp_dcosz_angle;   // Reconstructed direction along z-axis
+    Int_t AngleRecoMethodNumuPFP;  // Method use for angle numu angle reconstruction using all PFP
+
     //Cluster Information
     Short_t nclusters;				      //number of clusters in a given event
     Short_t clusterId[kMaxClusters];		      //ID of this cluster
@@ -1326,6 +1336,8 @@ namespace dune {
     std::string fEnergyRecoNCLabel;
     std::string fAngleRecoNueLabel;
     std::string fAngleRecoNumuLabel;
+    std::string fAngleRecoNuePFPLabel;
+    std::string fAngleRecoNumuPFPLabel;
     std::vector<std::string> fShowerModuleLabel;
     std::vector<std::string> fCalorimetryModuleLabel;
     std::vector<std::string> fParticleIDModuleLabel;
@@ -2440,21 +2452,31 @@ void dune::AnalysisTreeDataStruct::ClearLocalData() {
   RecoLepEnNumu_mcs_chi2 = -99999.;
   RecoLepEnNumu_mcs_llhd = -99999.;
 
-  Nue_vtxx_angle  = -99999.;
-  Nue_vtxy_angle  = -99999.;
-  Nue_vtxz_angle  = -99999.;
-  Nue_dcosx_angle = -99999.;
-  Nue_dcosy_angle = -99999.;
-  Nue_dcosz_angle = -99999.;
-  AngleRecoMethodNue   = -99999;
+  Nue_vtxx_angle         = -99999.;
+  Nue_vtxy_angle         = -99999.;
+  Nue_vtxz_angle         = -99999.;
+  Nue_dcosx_angle        = -99999.;
+  Nue_dcosy_angle        = -99999.;
+  Nue_dcosz_angle        = -99999.;
+  AngleRecoMethodNue     = -99999;
 
-  Numu_vtxx_angle  = -99999.;
-  Numu_vtxy_angle  = -99999.;
-  Numu_vtxz_angle  = -99999.;
-  Numu_dcosx_angle = -99999.;
-  Numu_dcosy_angle = -99999.;
-  Numu_dcosz_angle = -99999.;
-  AngleRecoMethodNumu   = -99999;
+  Numu_vtxx_angle        = -99999.;
+  Numu_vtxy_angle        = -99999.;
+  Numu_vtxz_angle        = -99999.;
+  Numu_dcosx_angle       = -99999.;
+  Numu_dcosy_angle       = -99999.;
+  Numu_dcosz_angle       = -99999.;
+  AngleRecoMethodNumu    = -99999;
+
+  Nue_pfp_dcosx_angle    = -99999.;
+  Nue_pfp_dcosy_angle    = -99999.;
+  Nue_pfp_dcosz_angle    = -99999.;
+  AngleRecoMethodNuePFP  = -99999;
+
+  Numu_pfp_dcosx_angle   = -99999.;
+  Numu_pfp_dcosy_angle   = -99999.;
+  Numu_pfp_dcosz_angle   = -99999.;
+  AngleRecoMethodNumuPFP = -99999;
 
   mcevts_truth = -99999;
   mcevts_truthcry = -99999;
@@ -3076,6 +3098,16 @@ void dune::AnalysisTreeDataStruct::SetAddresses(
     CreateBranch("Numu_dcosy_angle", &Numu_dcosy_angle, "Numu_dcosy_angle/F");
     CreateBranch("Numu_dcosz_angle", &Numu_dcosz_angle, "Numu_dcosz_angle/F");
     CreateBranch("AngleRecoMethodNumu", &AngleRecoMethodNumu, "AngleRecoMethodNumu/I");
+
+    CreateBranch("Nue_pfp_dcosx_angle", &Nue_pfp_dcosx_angle, "Nue_pfp_dcosx_angle/F");
+    CreateBranch("Nue_pfp_dcosy_angle", &Nue_pfp_dcosy_angle, "Nue_pfp_dcosy_angle/F");
+    CreateBranch("Nue_pfp_dcosz_angle", &Nue_pfp_dcosz_angle, "Nue_pfp_dcosz_angle/F");
+    CreateBranch("AngleRecoMethodNuePFP", &AngleRecoMethodNuePFP, "AngleRecoMethodNuePFP/I");
+
+    CreateBranch("Numu_pfp_dcosx_angle", &Numu_pfp_dcosx_angle, "Numu_pfp_dcosx_angle/F");
+    CreateBranch("Numu_pfp_dcosy_angle", &Numu_pfp_dcosy_angle, "Numu_pfp_dcosy_angle/F");
+    CreateBranch("Numu_pfp_dcosz_angle", &Numu_pfp_dcosz_angle, "Numu_pfp_dcosz_angle/F");
+    CreateBranch("AngleRecoMethodNumuPFP", &AngleRecoMethodNumuPFP, "AngleRecoMethodNumuPFP/I");
   }
 
 
@@ -3586,6 +3618,8 @@ dune::AnalysisTree::AnalysisTree(fhicl::ParameterSet const& pset) :
   fEnergyRecoNCLabel        (pset.get< std::string >("EnergyRecoNCLabel")),
   fAngleRecoNueLabel        (pset.get< std::string >("AngleRecoNueLabel")),
   fAngleRecoNumuLabel        (pset.get< std::string >("AngleRecoNumuLabel")),
+  fAngleRecoNuePFPLabel        (pset.get< std::string >("AngleRecoNuePFPLabel")),
+  fAngleRecoNumuPFPLabel        (pset.get< std::string >("AngleRecoNumuPFPLabel")),
   fShowerModuleLabel        (pset.get< std::vector<std::string> >("ShowerModuleLabel")),
   fCalorimetryModuleLabel   (pset.get< std::vector<std::string> >("CalorimetryModuleLabel")),
   fParticleIDModuleLabel    (pset.get< std::vector<std::string> >("ParticleIDModuleLabel")   ),
@@ -4374,6 +4408,8 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
   if(fSaveNuRecoAngleInfo){
     auto anglereconuein = evt.getHandle<dune::AngularRecoOutput>(fAngleRecoNueLabel);
     auto anglereconumuin = evt.getHandle<dune::AngularRecoOutput>(fAngleRecoNumuLabel);
+    auto anglereconuepfpin = evt.getHandle<dune::AngularRecoOutput>(fAngleRecoNuePFPLabel);
+    auto anglereconumupfpin = evt.getHandle<dune::AngularRecoOutput>(fAngleRecoNumuPFPLabel);
 
     if ( !anglereconuein.failedToGet() )
 	{
@@ -4401,6 +4437,28 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
     }
     else{
       std::cerr << "Warning! No product found with label: " << fAngleRecoNumuLabel << std::endl;
+    }
+
+    if ( !anglereconuepfpin.failedToGet() )
+    {
+	  fData->Nue_pfp_dcosx_angle       = anglereconuepfpin->fRecoDirection.X();
+	  fData->Nue_pfp_dcosy_angle       = anglereconuepfpin->fRecoDirection.Y();
+	  fData->Nue_pfp_dcosz_angle       = anglereconuepfpin->fRecoDirection.Z();
+	  fData->AngleRecoMethodNuePFP        = anglereconuepfpin->recoMethodUsed;
+    }
+    else{
+      std::cerr << "Warning! No product found with label: " << fAngleRecoNuePFPLabel << std::endl;
+    }
+
+    if ( !anglereconumupfpin.failedToGet() )
+    {
+	  fData->Numu_pfp_dcosx_angle       = anglereconumupfpin->fRecoDirection.X();
+	  fData->Numu_pfp_dcosy_angle       = anglereconumupfpin->fRecoDirection.Y();
+	  fData->Numu_pfp_dcosz_angle       = anglereconumupfpin->fRecoDirection.Z();
+	  fData->AngleRecoMethodNumuPFP        = anglereconumupfpin->recoMethodUsed;
+    }
+    else{
+      std::cerr << "Warning! No product found with label: " << fAngleRecoNumuPFPLabel << std::endl;
     }
 
   } // end fSaveNuRecoEnergyInfo

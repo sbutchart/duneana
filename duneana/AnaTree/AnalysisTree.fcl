@@ -45,6 +45,8 @@ dune35t_analysistree:
  
  AngleRecoNueLabel: "angularreconue"
  AngleRecoNumuLabel: "angularreconumu"
+ AngleRecoNuePFPLabel: "angularreconuepfp"
+ AngleRecoNumuPFPLabel: "angularreconumupfp"
 
 
  UseBuffers:               false

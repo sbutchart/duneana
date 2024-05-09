@@ -76,7 +76,6 @@ namespace solar
     bool InMyMap(int TrID, std::map<int, float> TrackIDMap);
     bool InMyMap(int TrID, std::map<int, simb::MCParticle> ParMap);
     void FillMyMaps(std::map<int, simb::MCParticle> &MyMap, art::FindManyP<simb::MCParticle> Assn, art::ValidHandle<std::vector<simb::MCTruth>> Hand);
-    // void CalcAdjHits(std::vector<recob::Hit> MyVec, std::vector<std::vector<recob::Hit>> &Clusters, TH1I *MyHist, TH1F *MyADCIntHist, bool HeavDebug);
     void PrintInColor(std::string MyString, int MyColor, std::string Type = "Info");
     int GetColor(std::string MyString);
     std::string str(int MyInt);
@@ -87,6 +86,7 @@ namespace solar
     std::string str(std::vector<double> MyVec, int MyPrecision = 2);
     int supress_stdout();
     void resume_stdout(int fd);
+
     // --- Our fcl parameter labels for the modules that made the data products
     std::string fRawDigitLabel, fHitLabel, fTrackLabel, fOpHitLabel, fOpFlashLabel, fGEANTLabel;
 
@@ -95,8 +95,8 @@ namespace solar
     int fDetectorSizeX, fDetectorSizeY, fDetectorSizeZ,fDetectorDriftTime, fClusterAlgoAdjChannel, fClusterInd0MatchTime, fClusterInd1MatchTime, fClusterPreselectionNHit;
     float fClusterMatchTime, fAdjClusterRad, fMinClusterCharge, fClusterMatchCharge, fAdjOpFlashY, fAdjOpFlashZ, fAdjOpFlashTime, fAdjOpFlashMaxPERatioCut, fAdjOpFlashMinPECut, fClusterMatchNHit, fClusterAlgoTime;
     std::vector<std::string> fLabels;
-    double fOpFlashAlgoTime, fOpFlashAlgoRad;
-    bool fClusterPreselectionTrack, fGenerateAdjOpFlash, fSaveMarleyEDep, fSaveSignalOpHits;
+    float fOpFlashAlgoTime, fOpFlashAlgoRad, fOpFlashAlgoPE, fOpFlashAlgoTriggerPE;
+    bool fClusterPreselectionTrack, fGenerateAdjOpFlash, fSaveMarleyEDep, fSaveSignalOpHits, fOpFlashAlgoCentroid, fOpFlashAlgoDebug;
 
     // --- Our TTrees, and its associated variables.
     TTree *fConfigTree;
@@ -176,8 +176,12 @@ namespace solar
     fAdjClusterRad            = p.get<float>("AdjClusterRad");
     fMinClusterCharge         = p.get<float>("MinClusterCharge");
     fGenerateAdjOpFlash       = p.get<bool>("GenerateAdjOpFlash");
-    fOpFlashAlgoTime       = p.get<double>("OpFlashAlgoTime");
-    fOpFlashAlgoRad        = p.get<double>("OpFlashAlgoRad");
+    fOpFlashAlgoTime          = p.get<double>("OpFlashAlgoTime");
+    fOpFlashAlgoRad           = p.get<double>("OpFlashAlgoRad");
+    fOpFlashAlgoPE            = p.get<float>("OpFlashAlgoPE");
+    fOpFlashAlgoTriggerPE     = p.get<float>("OpFlashAlgoTriggerPE");
+    fOpFlashAlgoCentroid      = p.get<bool>("OpFlashAlgoCentroid");
+    fOpFlashAlgoDebug         = p.get<bool>("OpFlashAlgoDebug");
     fAdjOpFlashTime           = p.get<float>("AdjOpFlashTime");
     fAdjOpFlashY              = p.get<float>("AdjOpFlashY");
     fAdjOpFlashZ              = p.get<float>("AdjOpFlashZ");
@@ -220,6 +224,12 @@ namespace solar
     fConfigTree->Branch("AdjClusterRad", &fAdjClusterRad);
     fConfigTree->Branch("MinClusterCharge", &fMinClusterCharge);
     fConfigTree->Branch("GenerateAdjOpFlash", &fGenerateAdjOpFlash);
+    fConfigTree->Branch("OpFlashAlgoTime", &fOpFlashAlgoTime);
+    fConfigTree->Branch("OpFlashAlgoRad", &fOpFlashAlgoRad);
+    fConfigTree->Branch("OpFlashAlgoPE", &fOpFlashAlgoPE);
+    fConfigTree->Branch("OpFlashAlgoTriggerPE", &fOpFlashAlgoTriggerPE);
+    fConfigTree->Branch("OpFlashAlgoCentroid", &fOpFlashAlgoCentroid);
+    fConfigTree->Branch("OpFlashAlgoDebug", &fOpFlashAlgoDebug);
     fConfigTree->Branch("AdjOpFlashTime", &fAdjOpFlashTime);
     fConfigTree->Branch("AdjOpFlashY", &fAdjOpFlashY);
     fConfigTree->Branch("AdjOpFlashZ", &fAdjOpFlashZ);
@@ -494,7 +504,7 @@ namespace solar
         TNuZ = nue.Nu().Vz();
         int N = MARLEYtruth.NParticles();
         sNuTruth = sNuTruth + "\nNeutrino Interaction: " + TNuInteraction;
-        sNuTruth = sNuTruth + "\nNumber of Neutrino Daughters: " + str(N);
+        sNuTruth = sNuTruth + "\nNumber of Producer Particles: " + str(N);
         sNuTruth = sNuTruth + "\nNeutrino energy: " + str(TNuE) + " MeV";
         sNuTruth = sNuTruth + "\nPosition (" + str(TNuX) + ", " + str(TNuY) + ", " + str(TNuZ) + ") cm";
       }
@@ -618,7 +628,7 @@ namespace solar
     if (fGenerateAdjOpFlash){
       std::vector<AdjOpHitsUtils::FlashInfo> FlashVec;
       std::vector<std::vector<art::Ptr<recob::OpHit>>> OpHitVec;
-      adjophits->CalcAdjOpHits(OpHitList, OpHitVec, false);
+      adjophits->CalcAdjOpHitsFast(OpHitList, OpHitVec, fOpFlashAlgoDebug);
       adjophits->MakeFlashVector(FlashVec, OpHitVec, evt);
       OpFlashNum = int(FlashVec.size());
       for (int i = 0; i < int(FlashVec.size()); i++)
@@ -674,10 +684,10 @@ namespace solar
             OpFlashPur /= int(OpHitVec[i].size());
           }
           OpFlashMarlPur.push_back(OpFlashPur); 
-          if (abs(TheFlash.Time) < 5)
+          if (abs(TheFlash.Time) < 20)
           {
-            mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (max/tot) " << TheFlash.MaxPE << "/" << TheFlash.PE << " with purity " << OpFlashPur << " time " << TheFlash.Time; 
-            sOpFlashTruth += "Marley OpFlash PE (max/tot) " + str(TheFlash.MaxPE) + "/" +  str(TheFlash.PE) + " with purity " + str(OpFlashPur) + " time " + str(TheFlash.Time) + " vertex (" + str(TheFlash.Y) + ", " + str(TheFlash.Z) + ")\n";
+            mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (ratio/tot) " << TheFlash.MaxPE/TheFlash.PE << "/" << TheFlash.PE << " with purity " << OpFlashPur << " time " << TheFlash.Time; 
+            sOpFlashTruth += "Marley OpFlash PE (fast/ratio/tot) " + str(TheFlash.FastToTotal) + "/" + str(TheFlash.MaxPE/TheFlash.PE) + "/" +  str(TheFlash.PE) + " with purity " + str(OpFlashPur) + " time " + str(TheFlash.Time) + " vertex (" + str(TheFlash.X) + ", " + str(TheFlash.Y) + ", " + str(TheFlash.Z) + ")\n";
           }
         }
       }
@@ -820,6 +830,7 @@ namespace solar
     std::vector<std::vector<float>> ClPur = {{}, {}, {}}, Cldzdy = {{}, {}, {}};
 
     std::string sRecoObjects = "";
+    sRecoObjects += "\n# OpHits (" + fOpHitLabel + ") in full geometry: " + str(OpHitNum);
     sRecoObjects += "\n# OpFlashes (" + fOpFlashLabel + ") in full geometry: " + str(OpFlashNum);
     sRecoObjects += "\n# Hits (" + fHitLabel + ") in each view: " + str(int(ColHits0.size())) + ", " + str(int(ColHits1.size())) + ", " + str(int(ColHits2.size())) + ", " + str(int(ColHits3.size()));
     sRecoObjects += "\n# Cluster from the hits: " + str(int(Clusters0.size())) + ", " + str(int(Clusters1.size())) + ", " + str(int(Clusters2.size())) + ", " + str(int(Clusters3.size()));
@@ -1295,8 +1306,8 @@ namespace solar
           {
             continue;
           }
-          // Instead of a circular cut, we apply an elliptical cut (dy/a)^2+(dz/b)^2<1
           // if (sqrt(pow(MVecRecY[i] - OpFlashY[j], 2) + pow(MVecRecZ[i] - OpFlashZ[j], 2)) > fAdjOpFlashRad)
+          // Instead of a circular cut, we apply an elliptical cut (dy/a)^2+(dz/b)^2<1
           if (pow(abs(MVecRecY[i] - OpFlashY[j])/fAdjOpFlashY, 2) + pow(abs(MVecRecZ[i] - OpFlashZ[j])/fAdjOpFlashZ, 2) > 1)
           {
             continue;

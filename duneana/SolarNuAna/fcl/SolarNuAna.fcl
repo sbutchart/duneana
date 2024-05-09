@@ -8,7 +8,7 @@ BEGIN_PROLOG
     RawDigitLabel:       "daq"		      # string for the process that made the raw digits
     HitLabel:		         "hitfd" 	      # string for the process that made the reco hits
     GEANT4Label:         "largeant"     # The label for the process which ran GEANT4
-    OpFlashLabel:        "opflash"     # The label for the process which ran the OpFlash
+    OpFlashLabel:        "opflash"      # The label for the process which ran the OpFlash
     OpHitLabel:          "ophitspe"     # The label for the process which ran the OpHit
     TrackLabel:          "pmtracktc"    # The label for the process which ran the PMTrack
 
@@ -37,9 +37,13 @@ BEGIN_PROLOG
     MinClusterCharge:        0.           # Min Charge for adj. clusters in [ADCxTick].
     AdjClusterRad:           100.         # Radius to search for adj. clusters in [cm] units.
 
-    GenerateAdjOpFlash:      true         # Generate adjacent OpFlashes.
-    OpFlashAlgoTime:         15           # Time window to look for OpFlashes in [tick] units.
-    OpFlashAlgoRad:          100          # Distance to look for OpFlashes in [cm] units.
+    GenerateAdjOpFlash:      false        # Generate OpFlashes.
+    OpFlashAlgoTime:         10           # Time window to look for adj. OpHits in [tick] units.
+    OpFlashAlgoRad:          100          # Distance to look for adj. OpHits in [cm] units.
+    OpFlashAlgoPE:           1.5          # PE threshold to look for adj. OpHits.
+    OpFlashAlgoTriggerPE:    20           # PE threshold to trigger an OpFlash.
+    OpFlashAlgoCentroid:     false        # Use the centroid computation of the flash based on a likelihood estimation.
+    OpFlashAlgoDebug:        false        # Debug flag for the OpFlash algorithm.
 
     AdjOpFlashTime:          4500         # Time window to look for adjacent flashes in [tick] units should be one full drift length.
     AdjOpFlashY:             200.         # Y distance to search for adj. OpFlashes reconstructed in [cm] units.

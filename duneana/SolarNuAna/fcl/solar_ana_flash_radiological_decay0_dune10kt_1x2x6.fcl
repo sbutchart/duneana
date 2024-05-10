@@ -1,0 +1,20 @@
+# solar_ana_flash_radiological_decay0_dune10kt_1x2x6.fcl
+# Specific configuration for signal+bkg events and coustom flash production
+# Run SolarNuAna on the output of a standard reco workflow for DUNE FD
+
+#include "solar_ana_dune10kt_1x2x6.fcl"
+
+# Only save the clusters with more than 2 hits
+physics.analyzers.solarnuana.ClusterPreselectionNHit: 2
+
+# Don't save the true energy depositions of marley particles
+physics.analyzers.solarnuana.SaveMarleyEDep: false
+
+# Select the coustom flash production and choose the parameters
+physics.analyzers.solarnuana.GenerateAdjOpFlash: true
+physics.analyzers.solarnuana.OpFlashAlgoTime: 10
+physics.analyzers.solarnuana.OpFlashAlgoRad: 300
+physics.analyzers.solarnuana.OpFlashAlgoPE: 1.5
+physics.analyzers.solarnuana.OpFlashAlgoTriggerPE: 30
+physics.analyzers.solarnuana.OpFlashAlgoCentroid: false
+physics.analyzers.solarnuana.OpFlashAlgoDebug: false

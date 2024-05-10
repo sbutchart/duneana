@@ -11,6 +11,7 @@
 #ifndef AdjOpHitsTool_h
 #define AdjOpHitsTool_h
 
+#include <cmath>
 #include <iostream>
 #include <vector>
 #include <fcntl.h>
@@ -53,15 +54,21 @@ namespace solar
             };
             explicit AdjOpHitsUtils( fhicl::ParameterSet const& p);
             void MakeFlashVector(std::vector<FlashInfo> &FlashVec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, art::Event const &evt);
-            void CalcAdjOpHits(std::vector<art::Ptr<recob::OpHit>> MyVec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, bool HeavDebug);
+            void CalcAdjOpHits(std::vector<art::Ptr<recob::OpHit>> Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, bool HeavDebug);
+            void CalcAdjOpHitsFast(std::vector<art::Ptr<recob::OpHit>> Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, bool HeavDebug);
+            void CalcCentroid(std::vector<art::Ptr<recob::OpHit>> Hits, double &x, double &y, double &z);
+            double GaussianPDF(double x, double mean, double sigma);
             // Write a struct to store the flash information
         
         private:
             art::ServiceHandle<geo::Geometry> geo;
             // From fhicl configuration
-            const double fOpFlashAlgoTime;
-            const double fOpFlashAlgoRad;
-            const float fAdjOpFlashMinPECut;
+            const float fOpFlashAlgoTime;
+            const float fOpFlashAlgoRad;
+            const float fOpFlashAlgoPE;
+            const float fOpFlashAlgoTriggerPE;
+            const bool fOpFlashAlgoCentroid;
+            const bool fOpFlashAlgoDebug;
     };
 }
 #endif

@@ -18,6 +18,7 @@ art_make( BASENAME_ONLY MODULE_LIBRARIES
   art::Framework_Services_Registry
   art_root_io::tfile_support
   ROOT::Core
+  ROOT::Tree
   art_root_io::TFileService_service
   art::Persistency_Common
   art::Persistency_Provenance

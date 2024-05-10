@@ -5,7 +5,7 @@
 #include "art/Utilities/ToolMacros.h"
 #include "fhiclcpp/ParameterSet.h"
 
-#include "duneana/DAQSimAna/TriggerPrimitiveFinderTool.h"
+#include "duneana/DAQSimAna/TriggerPrimitiveFinder/TriggerPrimitiveFinderTool.h"
 
 class TriggerPrimitiveFinderPass1 : public TriggerPrimitiveFinderTool {
 public:

@@ -1,5 +1,4 @@
-# addnoise_findprim_daqsimanas.fcl
-# configured for refactored workflow, SimWireDUNE
+# addnoise_findprim_daqsimanas_refactored.fcl
 
 # Read in (presumably noise-free) waveforms, add noise and pedestals,
 # then find trigger primitives on the (now noisy) waveforms, and save
@@ -10,7 +9,7 @@
 # example. The output of each trigger primitive finder should be
 # connected to a DaqSimAna analyzer
 
-#include "SNAna.fcl"
+#include "SNAna2.fcl"
 #include "trigprim.fcl"
 BEGIN_PROLOG
 trigprim_snana: {
@@ -23,7 +22,7 @@ END_PROLOG
 #include "detsim_1dsimulation_dune10kt_1x2x6.fcl"
 
 process_name: PrimSim
-services.TFileService: { fileName: "SNAna_refactored_plus_trigprim_multithreshold.root" }
+services.TFileService: { fileName: "SNAna2_refactored_plus_trigprim_multithreshold.root" }
 
 # Define and configure some modules to do work on each event.
 # First modules are defined; they are scheduled later.
@@ -123,24 +122,26 @@ physics.analyzers.snanatrigprim50sig.HitLabel: "trigprim50sig"
 physics.analyzers.snanatrigprim55sig.HitLabel: "trigprim55sig"
 physics.analyzers.snanatrigprim60sig.HitLabel: "trigprim60sig"
 
+services.Geometry: @local::dune10kt_1x2x6_v5_refactored_geo
+
 # Only save IDEs in one of the output trees, since they're always the same and will only take up space otherwise
 # physics.analyzers.snanatrigprim800.SaveIDEs: true
 
 # =====================================================================
+# You probably won't need to change anything below here
 
 # Shut up the backtracker
 services.message.destinations.LogStandardOut.categories.BackTracker.limit: 0
 services.message.destinations.LogStandardError.categories.BackTracker.limit: 0
 
 # Display all the INFO message for SNAna_module
-services.message.destinations.LogStandardOut.categories.SNAna_module.limit:-1
+services.message.destinations.LogStandardOut.categories.SNAna2_module.limit:-1
 
 # If you want to have the mf::LogDebug() messages, uncomment the following:
 # services.message.destinations.LogStandardOut.threshold:"DEBUG"
-# services.message.destinations.LogStandardOut.categories.SNAna_module.limit:-1
+# services.message.destinations.LogStandardOut.categories.SNAna2_module.limit:-1
 # services.message.destinations.LogStandardOut.categories.default.limit:0
 
-services.Geometry: @local::dune10kt_1x2x6_v5_refactored_geo
 
 # DetSim services. These are used by SimWire to add noise and
 # pedestals to the incoming (noise-free) waveforms

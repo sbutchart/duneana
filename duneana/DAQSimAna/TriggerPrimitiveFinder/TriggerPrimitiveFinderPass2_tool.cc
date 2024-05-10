@@ -6,7 +6,7 @@
 #include "art/Utilities/ToolMacros.h"
 #include "fhiclcpp/ParameterSet.h"
 
-#include "duneana/DAQSimAna/TriggerPrimitiveFinderPass1.h"
+#include "duneana/DAQSimAna/TriggerPrimitiveFinder/TriggerPrimitiveFinderPass1.h"
 
 #include "duneana/DAQSimAna/AlgParts.h"
 

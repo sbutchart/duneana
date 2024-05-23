@@ -18,17 +18,40 @@ dune_calibanatree: {
   SelectionTools: []
 }
 
-dune_calibanatree_selectall: {
-  tool_type: CalibAnaTreeSelectAllTracks
-  RequireT0: false
+stopping_selection: {
+  tool_type: CalibAnaTreeSelectStoppingTrack
+  FVInsetMinX: 40
+  FVInsetMaxX: 40
+  FVInsetMinY: 40
+  FVInsetMaxY: 40
+  FVInsetMinZ: 40
+  FVInsetMaxZ: 40
+  MinTimeTickInset: 100
+  MaxTimeTickInset: 100
+  EndMediandQdxCut: 85
+  NumberTimeSamples: 6000
+  MediandQdxRRMax: 5.
+  CheckFiducialX: false
 }
 
-dune_calibanatree.SelectionTools: [@local::dune_calibanatree_selectall]
+a2c_selection: {
+  tool_type: CalibAnaTreeSelectAnode2CathodeTrack
+  TickCut: 4300
+  RequireT0: true
+}
+
+dune_calibanatree_selectall: {
+  tool_type: CalibAnaTreeSelectAllTracks
+  RequireT0: true}
+
+dune_calibanatree.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::dune_calibanatree_selectall]
 
 
 dune_calibanatree_mc: @local::dune_calibanatree
 dune_calibanatree_mc.G4producer: "largeant"
-dune_calibanatree_mc.SimChannelproducer: "largeant" # before factorisation, use tpcrawdecoder for factorised sim scheme
+dune_calibanatree_mc.SimChannelproducer: "tpcrawdecoder:simpleSC" # before factorisation, use tpcrawdecoder for factorised sim scheme
+
+dune_calibanatree_mc.HITproducer: "gaushit"
 
 
 END_PROLOG

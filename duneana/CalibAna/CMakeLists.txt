@@ -1,11 +1,17 @@
 add_subdirectory(fcl)
 #art_dictionary()
 art_make(BASENAME_ONLY
-         MODULE_LIBRARIES
-         dunecore::DAQTriggerSim_TriggerDataProducts
-         larcore::Geometry_Geometry_service
+         TOOL_LIBRARIES
+         canvas
+	 lardataalg::DetectorInfo
          lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+         larcore::Geometry_Geometry_service
+	 MODULE_LIBRARIES
+         lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+	 lardataalg::DetectorInfo
+	 dunecore::DAQTriggerSim_TriggerDataProducts
          larcorealg::Geometry
+	 larcore::Geometry_Geometry_service
          lardataobj::RawData
          nusimdata::SimulationBase
          larsim::MCCheater_BackTrackerService_service
@@ -30,7 +36,9 @@ art_make(BASENAME_ONLY
 	 cetlib_except
          ROOT_BASIC_LIB_LIST
 	 ROOT::Minuit
-         )
+         ROOT::X3d   	 
+    	 larcorealg::GeoAlgo
+)
 
 install_fhicl()
 install_headers()

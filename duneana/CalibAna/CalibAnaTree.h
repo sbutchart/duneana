@@ -165,6 +165,24 @@ private:
 
   void DoTailFit();
 
+    // declare truth utils, ported from CAFana in SBNCode
+    std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>>
+    PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels,
+		    const geo::GeometryCore &geo);
+    std::map<int, std::vector<art::Ptr<recob::Hit>>>
+    PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
+		 const detinfo::DetectorClocksData &clockData,
+		 const cheat::BackTrackerService &backtracker);
+    std::vector<std::pair<int, float>>
+    AllTrueParticleIDEnergyMatches(const detinfo::DetectorClocksData &clockData,
+				   const std::vector<art::Ptr<recob::Hit> >& hits,
+				   bool rollup_unsaved_ids);
+    float TotalHitEnergy(const detinfo::DetectorClocksData &clockData,
+			 const std::vector<art::Ptr<recob::Hit> >& hits);
+    int GetShowerPrimary(const int g4ID);
+
+
+
   // config
 
   // tags

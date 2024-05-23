@@ -48,14 +48,6 @@ void ExpResiduals(int &npar, double *g, double &result, double *par, int flag) {
   result = sqrt(ret);
 }
 
-// declare truth utils, defined at the end
-std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>>PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels,
-										   const geo::GeometryCore &geo);
-std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
-							      const detinfo::DetectorClocksData &clockData,
-							      const cheat::BackTrackerService &backtracker);
-
-
 dune::CalibAnaTree::~CalibAnaTree() {
   delete fTrack;
 }
@@ -180,6 +172,11 @@ void dune::CalibAnaTree::analyze(art::Event const& e)
     art::ValidHandle<std::vector<sim::SimChannel>> simchannel_handle = e.getValidHandle<std::vector<sim::SimChannel>>(fSimChannelproducer);
     art::fill_ptr_vector(simchannels, simchannel_handle);
   }
+
+  if (fVerbose) {
+      std::cout<<"Received "<<simchannels.size()<<" SimChannels for this event."<<std::endl;
+  }
+
 
   // Reconstructed Information
   std::vector<art::Ptr<recob::PFParticle>> PFParticleList;
@@ -882,9 +879,14 @@ void dune::CalibAnaTree::FillTrackTruth(const detinfo::DetectorClocksData &clock
 					const detinfo::DetectorPropertiesData &dprop,
 					const geo::GeometryCore *geo) {
 
-  // Lookup the true-particle match -- use utils in CAF
-  std::vector<std::pair<int, float>> matches ;//= CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
-  float total_energy = 0.;//= CAFRecoUtils::TotalHitEnergy(clock_data, trkHits);
+  // Lookup the true-particle match -- use utils ported from SBNCode CAF
+  std::vector<std::pair<int, float>> matches = AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
+  float total_energy = TotalHitEnergy(clock_data, trkHits);
+
+  if (fVerbose) {
+      std::cout<<"Matched " << matches.size() << " true particles to the track. "<<std::endl;
+      std::cout<<"Total track's hit true energy: "<<total_energy<<std::endl;
+  }
 
   fTrack->truth.depE = total_energy / 1000. /* MeV -> GeV */;
 
@@ -903,7 +905,10 @@ void dune::CalibAnaTree::FillTrackTruth(const detinfo::DetectorClocksData &clock
 
     for (const art::Ptr<simb::MCParticle> &p_mcp: mcparticles) {
       if (p_mcp->TrackId() == bestmatch.first) {
-	if (fVerbose) std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
+	if (fVerbose)
+	    std::cout << "Matched! G4 Track ID: " << p_mcp->TrackId()
+		      << " pdg: " << p_mcp->PdgCode()
+		      << " process: " << p_mcp->EndProcess() << std::endl;
 	fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, dprop, geo);
 	fTrack->truth.eff = fTrack->truth.depE / (fTrack->truth.p.plane0VisE + fTrack->truth.p.plane1VisE + fTrack->truth.p.plane2VisE);
 
@@ -1265,8 +1270,8 @@ dune::TrackHitInfo dune::CalibAnaTree::MakeHit(const recob::Hit &hit,
 
 
 /// Code taken from sbncode/CAFMaker/FillTrue.cxx
-std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels,
-										    const geo::GeometryCore &geo)
+std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> dune::CalibAnaTree::PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels,
+												   const geo::GeometryCore &geo)
 /// Creates map of WireID and sim::IDE by backtracked track ID
 {
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> ret;
@@ -1285,10 +1290,14 @@ std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChann
       }
     }
   }
+
+  if (fVerbose) {
+      std::cout<<"Prepared IDEs for "<<ret.size()<<" G4 tracks."<<std::endl;
+  }
   return ret;
 }
 
-std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
+std::map<int, std::vector<art::Ptr<recob::Hit>>> dune::CalibAnaTree::PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits,
 							      const detinfo::DetectorClocksData &clockData,
 							      const cheat::BackTrackerService &backtracker)
 {
@@ -1296,6 +1305,63 @@ std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<
   for (const art::Ptr<recob::Hit> h: allHits) {
     for (int ID: backtracker.HitToTrackIds(clockData, *h)) {
       ret[abs(ID)].push_back(h);
+    }
+  }
+  return ret;
+}
+
+
+std::vector<std::pair<int, float>> dune::CalibAnaTree::AllTrueParticleIDEnergyMatches(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids) {
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+  std::map<int, float> trackIDToEDepMap;
+  for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = hits.begin(); hitIt != hits.end(); ++hitIt) {
+    art::Ptr<recob::Hit> hit = *hitIt;
+    std::vector<sim::TrackIDE> trackIDs = bt_serv->HitToTrackIDEs(clockData, hit);
+    for (unsigned int idIt = 0; idIt < trackIDs.size(); ++idIt) {
+      int id = trackIDs[idIt].trackID;
+      if (rollup_unsaved_ids) id = std::abs(id);
+      id = GetShowerPrimary(id);
+      trackIDToEDepMap[id] += trackIDs[idIt].energy;
+    }
+  }
+
+  std::vector<std::pair<int, float>> ret;
+  for (auto const &pair: trackIDToEDepMap) {
+    ret.push_back(pair);
+  }
+  return ret;
+}
+
+int dune::CalibAnaTree::GetShowerPrimary(const int g4ID)
+{
+  art::ServiceHandle<cheat::ParticleInventoryService> particleInventory;
+  const sim::ParticleList& particles = particleInventory->ParticleList();
+  const sim::ParticleList::const_iterator part_iter = particles.find(g4ID);
+  if(part_iter == particles.end()) return g4ID;
+
+  auto temp_iter = part_iter;
+  int primary_id = part_iter->second->TrackId();
+
+  while (std::abs(temp_iter->second->PdgCode()) == 11 || temp_iter->second->PdgCode() == 22)
+    {
+      primary_id = temp_iter->second->TrackId();
+      temp_iter = particles.find(temp_iter->second->Mother());
+      if(temp_iter == particles.end()) break;
+    }
+
+  return primary_id;
+}
+
+float dune::CalibAnaTree::TotalHitEnergy(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit> >& hits) {
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+
+  float ret = 0.;
+
+  for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = hits.begin(); hitIt != hits.end(); ++hitIt) {
+    art::Ptr<recob::Hit> hit = *hitIt;
+    std::vector<sim::TrackIDE> trackIDs = bt_serv->HitToTrackIDEs(clockData, hit);
+    for (unsigned int idIt = 0; idIt < trackIDs.size(); ++idIt) {
+      ret += trackIDs[idIt].energy;
     }
   }
   return ret;

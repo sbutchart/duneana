@@ -1,21 +1,27 @@
 BEGIN_PROLOG
 
 dune_calibanatree: {
-  module_type: CalibAnaTree
-  CALOproducer: "pandoracalo"
-  TRKproducer:  "pandoraTrack"
-  TRKHMproducer:  "" # Track Hit Metadata module; same as TRKproducer by default
-  T0producers: ["pandora"]
-  PFPproducer: "pandora"
-  G4producer: ""
-  SimChannelproducer: ""
-  HITproducer: "fasthit" # for standard sims, use gaushit, or pandora
-  RawDigitproducers: ["daq"]
-  RequireT0: false
-  HitRawDigitsTickCollectWidth: 200
-  DoTailFit: false
-  SilenceMissingDataProducts: true
-  SelectionTools: []
+   module_type: CalibAnaTree
+   CALOproducer: "pandoracalo"
+   TRKproducer:  "pandoraTrack"
+   TRKHMproducer:  "" # Track Hit Metadata module; same as TRKproducer by default
+   T0producers: ["pandora"]
+   PFPproducer: "pandora"
+   G4producer: ""
+   SimChannelproducer: ""
+   HITproducer: "fasthit" # for standard sims, use gaushit, or pandora
+   RawDigitproducers: ["daq"]
+   RequireT0: false
+   HitRawDigitsTickCollectWidth: 200
+   HitRawDigitsWireCollectWidth: 5
+   DoTailFit: false
+   TailFitResidualRange: 5.
+   FillTrackEndHits: true
+   TrackEndHitWireBox: 60
+   TrackEndHitTimeBox: 300
+   SilenceMissingDataProducts: true
+   SelectionTools: []
+   Verbose: false # to switch the verbose output on
 }
 
 stopping_selection: {
@@ -41,16 +47,16 @@ a2c_selection: {
 }
 
 dune_calibanatree_selectall: {
-  tool_type: CalibAnaTreeSelectAllTracks
-  RequireT0: true}
+   tool_type: CalibAnaTreeSelectAllTracks
+   RequireT0: true
+}
 
 dune_calibanatree.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::dune_calibanatree_selectall]
 
-
+# Default MC config
 dune_calibanatree_mc: @local::dune_calibanatree
 dune_calibanatree_mc.G4producer: "largeant"
 dune_calibanatree_mc.SimChannelproducer: "tpcrawdecoder:simpleSC" # before factorisation, use tpcrawdecoder for factorised sim scheme
-
 dune_calibanatree_mc.HITproducer: "gaushit"
 
 

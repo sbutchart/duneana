@@ -57,7 +57,11 @@ dune_calibanatree.SelectionTools: [@local::stopping_selection, @local::a2c_selec
 dune_calibanatree_mc: @local::dune_calibanatree
 dune_calibanatree_mc.G4producer: "largeant"
 dune_calibanatree_mc.SimChannelproducer: "tpcrawdecoder:simpleSC" # before factorisation, use tpcrawdecoder for factorised sim scheme
-dune_calibanatree_mc.HITproducer: "gaushit"
+dune_calibanatree_mc.HITproducer: "hitpdune"
+
+pdhd_calibana_data: @local::dune_calibanatree
+pdhd_calibana_data.HITproducer: "hitpdune"
+pdhd_calibana_mc: @local::dune_calibanatree_mc
 
 
 END_PROLOG

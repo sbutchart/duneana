@@ -1,5 +1,6 @@
 add_subdirectory(AnaTree)
 add_subdirectory(CAFMaker)
+add_subdirectory(CalibAna)
 add_subdirectory(DAQSimAna)
 add_subdirectory(EnergyStudies)
 add_subdirectory(EventFilters)

@@ -6,21 +6,21 @@ art_make( MODULE_LIBRARIES
 	  lardataobj::Simulation
 	  larsim::MCCheater_BackTrackerService_service
 	  larsim::MCCheater_ParticleInventoryService_service
-          larsim::Utils
+      larsim::Utils
 	  lardata::Utilities
 	  larevt::Filters
 	  lardataobj::RawData
 	  lardataobj::RecoBase
 	  lardataobj::AnalysisBase
 	  lardata::RecoObjects
-          lardata::ArtDataHelper
-          lardataalg::DetectorInfo
+      lardata::ArtDataHelper
+      lardataalg::DetectorInfo
 	  larreco::RecoAlg
 	  larpandora::LArPandoraInterface
 	  dunecore::SignalShapingServiceDUNE10kt_service
 	  dunecore::SignalShapingServiceDUNE35t_service
-          nusimdata::SimulationBase
-          ART_FRAMEWORK_CORE
+      nusimdata::SimulationBase
+      ART_FRAMEWORK_CORE
 	  ART_FRAMEWORK_PRINCIPAL
 	  ART_FRAMEWORK_SERVICES_REGISTRY
 	  ART_ROOT_IO_TFILE_SUPPORT

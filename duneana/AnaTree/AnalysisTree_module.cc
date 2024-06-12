@@ -1353,6 +1353,8 @@ namespace dune {
     bool fSaveGenieInfo; ///whether to extract and save Genie information
     bool fSaveProtoInfo; ///whether to extract and save ProtDUNE beam simulation information
     bool fSaveGeantInfo; ///whether to extract and save Geant information
+    bool fSaveGeantPrimaryOnly; ///whether to extract Geant information of primarie particles only
+    bool fSaveGeantLeptonOnly; ///whether to extract Geant information of neutrino leptons only
     bool fSaveMCShowerInfo; ///whether to extract and save MC Shower information
     bool fSaveMCTrackInfo; ///whether to extract and save MC Track information
     bool fSaveHitInfo; ///whether to extract and save Hit information
@@ -3635,6 +3637,8 @@ dune::AnalysisTree::AnalysisTree(fhicl::ParameterSet const& pset) :
   fSaveGenieInfo	    (pset.get< bool >("SaveGenieInfo", false)),
   fSaveProtoInfo	    (pset.get< bool >("SaveProtoInfo", false)),
   fSaveGeantInfo	    (pset.get< bool >("SaveGeantInfo", false)),
+  fSaveGeantPrimaryOnly	(pset.get< bool >("SaveGeantPrimaryOnly", false)),
+  fSaveGeantLeptonOnly	(pset.get< bool >("SaveGeantLeptonOnly", false)),
   fSaveMCShowerInfo	    (pset.get< bool >("SaveMCShowerInfo", false)),
   fSaveMCTrackInfo	    (pset.get< bool >("SaveMCTrackInfo", false)),
   fSaveHitInfo              (pset.get< bool >("SaveHitInfo", false)),
@@ -5247,6 +5251,7 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
 
     //save neutrino interaction information
     fData->mcevts_truth = mclist.size();
+    std::map<Int_t,Int_t> expected_lep;
     if (fData->mcevts_truth > 0){//at least one mc record
       if (fSaveGenieInfo){
         int neutrino_i = 0;
@@ -5270,6 +5275,7 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
               fData->nu_dcosz_truth[neutrino_i] = mclist[iList]->GetNeutrino().Nu().Pz()/mclist[iList]->GetNeutrino().Nu().P();
             }
             fData->lep_mom_truth[neutrino_i] = mclist[iList]->GetNeutrino().Lepton().P();
+            expected_lep[mclist[iList]->GetNeutrino().Lepton().PdgCode()]+=1;
             if (mclist[iList]->GetNeutrino().Lepton().P()){
               fData->lep_dcosx_truth[neutrino_i] = mclist[iList]->GetNeutrino().Lepton().Px()/mclist[iList]->GetNeutrino().Lepton().P();
               fData->lep_dcosy_truth[neutrino_i] = mclist[iList]->GetNeutrino().Lepton().Py()/mclist[iList]->GetNeutrino().Lepton().P();
@@ -5507,6 +5513,18 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
           //++geant_particle;
           bool isPrimary = pPart->Process() == pri;
           int TrackID = pPart->TrackId();
+          if (fSaveGeantPrimaryOnly)
+            if (isPrimary == false) continue;
+          if (fSaveGeantLeptonOnly)
+          {
+            if (pPart->Mother()!=0) continue;
+            else
+            {
+              if (expected_lep[pPart->PdgCode()]<=0) continue;
+              else expected_lep[pPart->PdgCode()]-=1;
+            }
+          }
+
           TrackIDtoIndex.emplace(TrackID, iPart);
           gpdg.push_back(pPart->PdgCode());
           gmother.push_back(pPart->Mother());

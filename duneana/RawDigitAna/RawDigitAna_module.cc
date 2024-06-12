@@ -94,6 +94,7 @@ void rawdigit::RawDigitAna::analyze(art::Event const& e)
 
   unsigned int idx = 0;
   for (raw::RawDigit const& rawdigit: rawdigits) {
+    // std::cout << "Compression: " << rawdigit.Compression() << std::endl;
     if (idx >= kMaxNumberCh) {
       mf::LogWarning("RawDigitAna") << "Number of channels in rawdigit exceeds kMaxNumberCh. Only saving the first " << kMaxNumberCh << " channels.";
       break;
@@ -118,9 +119,9 @@ void rawdigit::RawDigitAna::reset(){
 
   for ( unsigned int i=0; i<kMaxNumberCh; ++i){
     // fW_plane[i] = -999;   
-    fW_ch[i] = -999;   
+    fW_ch[i] = -1;   
     for ( unsigned int j=0; j<kMaxTicks; ++j){
-      fW_signal[i][j] = -999.0;
+      fW_signal[i][j] = 0;
     }
   }
 }

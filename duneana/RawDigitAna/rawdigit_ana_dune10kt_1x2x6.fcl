@@ -21,7 +21,7 @@ physics:{
     rawdigit:{
       module_label: rawdigit
       module_type:  RawDigitAna
-      ModuleLabel:  "daq" 
+      ModuleLabel:  "tpcrawdecoder:daq" 
     }
   }
 

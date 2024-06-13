@@ -1353,6 +1353,8 @@ namespace dune {
     bool fSaveGenieInfo; ///whether to extract and save Genie information
     bool fSaveProtoInfo; ///whether to extract and save ProtDUNE beam simulation information
     bool fSaveGeantInfo; ///whether to extract and save Geant information
+    bool fSaveGeantPrimaryOnly; ///whether to extract Geant information of primarie particles only
+    bool fSaveGeantLeptonOnly; ///whether to extract Geant information of neutrino leptons only
     bool fSaveMCShowerInfo; ///whether to extract and save MC Shower information
     bool fSaveMCTrackInfo; ///whether to extract and save MC Track information
     bool fSaveHitInfo; ///whether to extract and save Hit information
@@ -3300,150 +3302,77 @@ void dune::AnalysisTreeDataStruct::SetAddresses(
   if (hasGeantInfo()){
     const char *flag_geant = sflag_geant.c_str();
     
-     
-    CreateBranch(Form("no_primaries%s", flag_geant),&no_primaries,"no_primaries/I");
-    CreateBranch(Form("geant_list_size%s", flag_geant),&geant_list_size,"geant_list_size/I");
-    CreateBranch(Form("geant_list_size_in_tpcAV%s", flag_geant),&geant_list_size_in_tpcAV,"geant_list_size_in_tpcAV/I");
-    CreateBranch(Form("pdg%s", flag_geant),pdg,"pdg[geant_list_size]/I");
-    CreateBranch(Form("status%s", flag_geant),status,"status[geant_list_size]/I");
-    CreateBranch(Form("Mass%s", flag_geant),Mass,"Mass[geant_list_size]/F");
-    CreateBranch(Form("Eng%s", flag_geant),Eng,"Eng[geant_list_size]/F");
-    CreateBranch(Form("EndE%s", flag_geant),EndE,"EndE[geant_list_size]/F");
-    CreateBranch(Form("Px%s", flag_geant),Px,"Px[geant_list_size]/F");
-    CreateBranch(Form("Py%s", flag_geant),Py,"Py[geant_list_size]/F");
-    CreateBranch(Form("Pz%s", flag_geant),Pz,"Pz[geant_list_size]/F");
-    CreateBranch(Form("P%s", flag_geant),P,"P[geant_list_size]/F");
-    CreateBranch(Form("StartPointx%s", flag_geant),StartPointx,"StartPointx[geant_list_size]/F");
-    CreateBranch(Form("StartPointy%s", flag_geant),StartPointy,"StartPointy[geant_list_size]/F");
-    CreateBranch(Form("StartPointz%s", flag_geant),StartPointz,"StartPointz[geant_list_size]/F");
-    CreateBranch(Form("StartT%s", flag_geant),StartT,"StartT[geant_list_size]/F");
-    CreateBranch(Form("EndPointx%s", flag_geant),EndPointx,"EndPointx[geant_list_size]/F");
-    CreateBranch(Form("EndPointy%s", flag_geant),EndPointy,"EndPointy[geant_list_size]/F");
-    CreateBranch(Form("EndPointz%s", flag_geant),EndPointz,"EndPointz[geant_list_size]/F");
-    CreateBranch(Form("EndT%s", flag_geant),EndT,"EndT[geant_list_size]/F");
-    CreateBranch(Form("theta%s", flag_geant),theta,"theta[geant_list_size]/F");
-    CreateBranch(Form("phi%s", flag_geant),phi,"phi[geant_list_size]/F");
-    CreateBranch(Form("theta_xz%s", flag_geant),theta_xz,"theta_xz[geant_list_size]/F");
-    CreateBranch(Form("theta_yz%s", flag_geant),theta_yz,"theta_yz[geant_list_size]/F");
-    CreateBranch(Form("pathlen%s", flag_geant),pathlen,"pathlen[geant_list_size]/F");
-    CreateBranch(Form("inTPCActive%s", flag_geant),inTPCActive,"inTPCActive[geant_list_size]/I");
-    CreateBranch(Form("StartPointx_tpcAV%s", flag_geant),StartPointx_tpcAV,"StartPointx_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("StartPointy_tpcAV%s", flag_geant),StartPointy_tpcAV,"StartPointy_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("StartPointz_tpcAV%s", flag_geant),StartPointz_tpcAV,"StartPointz_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("StartT_tpcAV%s", flag_geant),StartT_tpcAV,"StartT_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("StartE_tpcAV%s", flag_geant),StartE_tpcAV,"StartE_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("StartP_tpcAV%s", flag_geant),StartP_tpcAV,"StartP_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("StartPx_tpcAV%s", flag_geant),StartPx_tpcAV,"StartPx_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("StartPy_tpcAV%s", flag_geant),StartPy_tpcAV,"StartPy_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("StartPz_tpcAV%s", flag_geant),StartPz_tpcAV,"StartPz_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("EndPointx_tpcAV%s", flag_geant),EndPointx_tpcAV,"EndPointx_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("EndPointy_tpcAV%s", flag_geant),EndPointy_tpcAV,"EndPointy_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("EndPointz_tpcAV%s", flag_geant),EndPointz_tpcAV,"EndPointz_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("EndT_tpcAV%s", flag_geant),EndT_tpcAV,"EndT_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("EndE_tpcAV%s", flag_geant),EndE_tpcAV,"EndE_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("EndP_tpcAV%s", flag_geant),EndP_tpcAV,"EndP_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("EndPx_tpcAV%s", flag_geant),EndPx_tpcAV,"EndPx_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("EndPy_tpcAV%s", flag_geant),EndPy_tpcAV,"EndPy_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("EndPz_tpcAV%s", flag_geant),EndPz_tpcAV,"EndPz_tpcAV[geant_list_size]/F");
-    CreateBranch(Form("pathlen_drifted%s", flag_geant),pathlen_drifted,"pathlen_drifted[geant_list_size]/F");
-    CreateBranch(Form("inTPCDrifted%s", flag_geant),inTPCDrifted,"inTPCDrifted[geant_list_size]/I");
-    CreateBranch(Form("StartPointx_drifted%s", flag_geant),StartPointx_drifted,"StartPointx_drifted[geant_list_size]/F");
-    CreateBranch(Form("StartPointy_drifted%s", flag_geant),StartPointy_drifted,"StartPointy_drifted[geant_list_size]/F");
-    CreateBranch(Form("StartPointz_drifted%s", flag_geant),StartPointz_drifted,"StartPointz_drifted[geant_list_size]/F");
-    CreateBranch(Form("StartT_drifted%s", flag_geant),StartT_drifted,"StartT_drifted[geant_list_size]/F");
-    CreateBranch(Form("StartE_drifted%s", flag_geant),StartE_drifted,"StartE_drifted[geant_list_size]/F");
-    CreateBranch(Form("StartP_drifted%s", flag_geant),StartP_drifted,"StartP_drifted[geant_list_size]/F");
-    CreateBranch(Form("StartPx_drifted%s", flag_geant),StartPx_drifted,"StartPx_drifted[geant_list_size]/F");
-    CreateBranch(Form("StartPy_drifted%s", flag_geant),StartPy_drifted,"StartPy_drifted[geant_list_size]/F");
-    CreateBranch(Form("StartPz_drifted%s", flag_geant),StartPz_drifted,"StartPz_drifted[geant_list_size]/F");
-    CreateBranch(Form("EndPointx_drifted%s", flag_geant),EndPointx_drifted,"EndPointx_drifted[geant_list_size]/F");
-    CreateBranch(Form("EndPointy_drifted%s", flag_geant),EndPointy_drifted,"EndPointy_drifted[geant_list_size]/F");
-    CreateBranch(Form("EndPointz_drifted%s", flag_geant),EndPointz_drifted,"EndPointz_drifted[geant_list_size]/F");
-    CreateBranch(Form("EndT_drifted%s", flag_geant),EndT_drifted,"EndT_drifted[geant_list_size]/F");
-    CreateBranch(Form("EndE_drifted%s", flag_geant),EndE_drifted,"EndE_drifted[geant_list_size]/F");
-    CreateBranch(Form("EndP_drifted%s", flag_geant),EndP_drifted,"EndP_drifted[geant_list_size]/F");
-    CreateBranch(Form("EndPx_drifted%s", flag_geant),EndPx_drifted,"EndPx_drifted[geant_list_size]/F");
-    CreateBranch(Form("EndPy_drifted%s", flag_geant),EndPy_drifted,"EndPy_drifted[geant_list_size]/F");
-    CreateBranch(Form("EndPz_drifted%s", flag_geant),EndPz_drifted,"EndPz_drifted[geant_list_size]/F");
-    CreateBranch(Form("NumberDaughters%s", flag_geant),NumberDaughters,"NumberDaughters[geant_list_size]/I");
-    CreateBranch(Form("Mother%s", flag_geant),Mother,"Mother[geant_list_size]/I");
-    CreateBranch(Form("TrackId%s", flag_geant),TrackId,"TrackId[geant_list_size]/I");
-    CreateBranch(Form("MergedId%s", flag_geant), MergedId, "MergedId[geant_list_size]/I");
-    CreateBranch(Form("origin%s", flag_geant), origin, "origin[geant_list_size]/I");
-    CreateBranch(Form("MCTruthIndex%s", flag_geant), MCTruthIndex, "MCTruthIndex[geant_list_size]/I");
-    CreateBranch(Form("process_primary%s", flag_geant),process_primary,"process_primary[geant_list_size]/I");
-
     CreateBranch(Form("no_primaries%s", flag_geant),&no_primaries,Form("no_primaries%s/I",flag_geant));
     CreateBranch("geant_list_size",&geant_list_size,"geant_list_size/I");
     CreateBranch("geant_list_size_in_tpcAV",&geant_list_size_in_tpcAV,"geant_list_size_in_tpcAV/I");
-    CreateBranch(Form("pdg%s", flag_geant),pdg,Form("pdg%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("status%s", flag_geant),status,Form("status%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("Mass%s", flag_geant),Mass,Form("Mass%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("Eng%s", flag_geant),Eng,Form("Eng%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndE%s", flag_geant),EndE,Form("EndE%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("Px%s", flag_geant),Px,Form("Px%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("Py%s", flag_geant),Py,Form("Py%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("Pz%s", flag_geant),Pz,Form("Pz%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("P%s", flag_geant),P,Form("P%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPointx%s", flag_geant),StartPointx,Form("StartPointx%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPointy%s", flag_geant),StartPointy,Form("StartPointy%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPointz%s", flag_geant),StartPointz,Form("StartPointz%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartT%s", flag_geant),StartT,Form("StartT%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPointx%s", flag_geant),EndPointx,Form("EndPointx%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPointy%s", flag_geant),EndPointy,Form("EndPointy%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPointz%s", flag_geant),EndPointz,Form("EndPointz%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndT%s", flag_geant),EndT,Form("EndT%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("theta%s", flag_geant),theta,Form("theta%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("phi%s", flag_geant),phi,Form("phi%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("theta_xz%s", flag_geant),theta_xz,Form("theta_xz%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("theta_yz%s", flag_geant),theta_yz,Form("theta_yz%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("pathlen%s", flag_geant),pathlen,Form("pathlen%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("inTPCActive%s", flag_geant),inTPCActive,Form("inTPCActive%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPointx_tpcAV%s", flag_geant),StartPointx_tpcAV,Form("StartPointx_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPointy_tpcAV%s", flag_geant),StartPointy_tpcAV,Form("StartPointy_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPointz_tpcAV%s", flag_geant),StartPointz_tpcAV,Form("StartPointz_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartT_tpcAV%s", flag_geant),StartT_tpcAV,Form("StartT_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartE_tpcAV%s", flag_geant),StartE_tpcAV,Form("StartE_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartP_tpcAV%s", flag_geant),StartP_tpcAV,Form("StartP_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPx_tpcAV%s", flag_geant),StartPx_tpcAV,Form("StartPx_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPy_tpcAV%s", flag_geant),StartPy_tpcAV,Form("StartPy_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPz_tpcAV%s", flag_geant),StartPz_tpcAV,Form("StartPz_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPointx_tpcAV%s", flag_geant),EndPointx_tpcAV,Form("EndPointx_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPointy_tpcAV%s", flag_geant),EndPointy_tpcAV,Form("EndPointy_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPointz_tpcAV%s", flag_geant),EndPointz_tpcAV,Form("EndPointz_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndT_tpcAV%s", flag_geant),EndT_tpcAV,Form("EndT_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndE_tpcAV%s", flag_geant),EndE_tpcAV,Form("EndE_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndP_tpcAV%s", flag_geant),EndP_tpcAV,Form("EndP_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPx_tpcAV%s", flag_geant),EndPx_tpcAV,Form("EndPx_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPy_tpcAV%s", flag_geant),EndPy_tpcAV,Form("EndPy_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPz_tpcAV%s", flag_geant),EndPz_tpcAV,Form("EndPz_tpcAV%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("pathlen_drifted%s", flag_geant),pathlen_drifted,Form("pathlen_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("inTPCDrifted%s", flag_geant),inTPCDrifted,Form("inTPCDrifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPointx_drifted%s", flag_geant),StartPointx_drifted,Form("StartPointx_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPointy_drifted%s", flag_geant),StartPointy_drifted,Form("StartPointy_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPointz_drifted%s", flag_geant),StartPointz_drifted,Form("StartPointz_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartT_drifted%s", flag_geant),StartT_drifted,Form("StartT_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartE_drifted%s", flag_geant),StartE_drifted,Form("StartE_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartP_drifted%s", flag_geant),StartP_drifted,Form("StartP_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPx_drifted%s", flag_geant),StartPx_drifted,Form("StartPx_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPy_drifted%s", flag_geant),StartPy_drifted,Form("StartPy_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("StartPz_drifted%s", flag_geant),StartPz_drifted,Form("StartPz_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPointx_drifted%s", flag_geant),EndPointx_drifted,Form("EndPointx_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPointy_drifted%s", flag_geant),EndPointy_drifted,Form("EndPointy_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPointz_drifted%s", flag_geant),EndPointz_drifted,Form("EndPointz_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndT_drifted%s", flag_geant),EndT_drifted,Form("EndT_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndE_drifted%s", flag_geant),EndE_drifted,Form("EndE_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndP_drifted%s", flag_geant),EndP_drifted,Form("EndP_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPx_drifted%s", flag_geant),EndPx_drifted,Form("EndPx_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPy_drifted%s", flag_geant),EndPy_drifted,Form("EndPy_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("EndPz_drifted%s", flag_geant),EndPz_drifted,Form("EndPz_drifted%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("NumberDaughters%s", flag_geant),NumberDaughters,Form("NumberDaughters%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("Mother%s", flag_geant),Mother,Form("Mother%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("TrackId%s", flag_geant),TrackId,Form("TrackId%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("MergedId%s", flag_geant), MergedId,Form("MergedId%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("origin%s", flag_geant), origin,Form("origin%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("MCTruthIndex%s", flag_geant), MCTruthIndex,Form("MCTruthIndex%s[geant_list_size]",flag_geant));
-    CreateBranch(Form("process_primary%s", flag_geant),process_primary,Form("process_primary%s[geant_list_size]",flag_geant));
+    CreateBranch(Form("pdg%s", flag_geant),pdg,Form("pdg%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("status%s", flag_geant),status,Form("status%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("Mass%s", flag_geant),Mass,Form("Mass%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("Eng%s", flag_geant),Eng,Form("Eng%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndE%s", flag_geant),EndE,Form("EndE%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("Px%s", flag_geant),Px,Form("Px%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("Py%s", flag_geant),Py,Form("Py%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("Pz%s", flag_geant),Pz,Form("Pz%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("P%s", flag_geant),P,Form("P%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPointx%s", flag_geant),StartPointx,Form("StartPointx%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPointy%s", flag_geant),StartPointy,Form("StartPointy%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPointz%s", flag_geant),StartPointz,Form("StartPointz%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartT%s", flag_geant),StartT,Form("StartT%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPointx%s", flag_geant),EndPointx,Form("EndPointx%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPointy%s", flag_geant),EndPointy,Form("EndPointy%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPointz%s", flag_geant),EndPointz,Form("EndPointz%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndT%s", flag_geant),EndT,Form("EndT%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("theta%s", flag_geant),theta,Form("theta%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("phi%s", flag_geant),phi,Form("phi%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("theta_xz%s", flag_geant),theta_xz,Form("theta_xz%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("theta_yz%s", flag_geant),theta_yz,Form("theta_yz%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("pathlen%s", flag_geant),pathlen,Form("pathlen%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("inTPCActive%s", flag_geant),inTPCActive,Form("inTPCActive%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("StartPointx_tpcAV%s", flag_geant),StartPointx_tpcAV,Form("StartPointx_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPointy_tpcAV%s", flag_geant),StartPointy_tpcAV,Form("StartPointy_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPointz_tpcAV%s", flag_geant),StartPointz_tpcAV,Form("StartPointz_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartT_tpcAV%s", flag_geant),StartT_tpcAV,Form("StartT_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartE_tpcAV%s", flag_geant),StartE_tpcAV,Form("StartE_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartP_tpcAV%s", flag_geant),StartP_tpcAV,Form("StartP_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPx_tpcAV%s", flag_geant),StartPx_tpcAV,Form("StartPx_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPy_tpcAV%s", flag_geant),StartPy_tpcAV,Form("StartPy_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPz_tpcAV%s", flag_geant),StartPz_tpcAV,Form("StartPz_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPointx_tpcAV%s", flag_geant),EndPointx_tpcAV,Form("EndPointx_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPointy_tpcAV%s", flag_geant),EndPointy_tpcAV,Form("EndPointy_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPointz_tpcAV%s", flag_geant),EndPointz_tpcAV,Form("EndPointz_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndT_tpcAV%s", flag_geant),EndT_tpcAV,Form("EndT_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndE_tpcAV%s", flag_geant),EndE_tpcAV,Form("EndE_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndP_tpcAV%s", flag_geant),EndP_tpcAV,Form("EndP_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPx_tpcAV%s", flag_geant),EndPx_tpcAV,Form("EndPx_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPy_tpcAV%s", flag_geant),EndPy_tpcAV,Form("EndPy_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPz_tpcAV%s", flag_geant),EndPz_tpcAV,Form("EndPz_tpcAV%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("pathlen_drifted%s", flag_geant),pathlen_drifted,Form("pathlen_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("inTPCDrifted%s", flag_geant),inTPCDrifted,Form("inTPCDrifted%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("StartPointx_drifted%s", flag_geant),StartPointx_drifted,Form("StartPointx_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPointy_drifted%s", flag_geant),StartPointy_drifted,Form("StartPointy_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPointz_drifted%s", flag_geant),StartPointz_drifted,Form("StartPointz_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartT_drifted%s", flag_geant),StartT_drifted,Form("StartT_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartE_drifted%s", flag_geant),StartE_drifted,Form("StartE_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartP_drifted%s", flag_geant),StartP_drifted,Form("StartP_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPx_drifted%s", flag_geant),StartPx_drifted,Form("StartPx_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPy_drifted%s", flag_geant),StartPy_drifted,Form("StartPy_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("StartPz_drifted%s", flag_geant),StartPz_drifted,Form("StartPz_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPointx_drifted%s", flag_geant),EndPointx_drifted,Form("EndPointx_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPointy_drifted%s", flag_geant),EndPointy_drifted,Form("EndPointy_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPointz_drifted%s", flag_geant),EndPointz_drifted,Form("EndPointz_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndT_drifted%s", flag_geant),EndT_drifted,Form("EndT_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndE_drifted%s", flag_geant),EndE_drifted,Form("EndE_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndP_drifted%s", flag_geant),EndP_drifted,Form("EndP_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPx_drifted%s", flag_geant),EndPx_drifted,Form("EndPx_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPy_drifted%s", flag_geant),EndPy_drifted,Form("EndPy_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("EndPz_drifted%s", flag_geant),EndPz_drifted,Form("EndPz_drifted%s[geant_list_size]/F",flag_geant));
+    CreateBranch(Form("NumberDaughters%s", flag_geant),NumberDaughters,Form("NumberDaughters%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("Mother%s", flag_geant),Mother,Form("Mother%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("TrackId%s", flag_geant),TrackId,Form("TrackId%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("MergedId%s", flag_geant), MergedId,Form("MergedId%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("origin%s", flag_geant), origin,Form("origin%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("MCTruthIndex%s", flag_geant), MCTruthIndex,Form("MCTruthIndex%s[geant_list_size]/I",flag_geant));
+    CreateBranch(Form("process_primary%s", flag_geant),process_primary,Form("process_primary%s[geant_list_size]/I",flag_geant));
     CreateBranch(Form("processname%s", flag_geant), processname);
   }
 
@@ -3635,6 +3564,8 @@ dune::AnalysisTree::AnalysisTree(fhicl::ParameterSet const& pset) :
   fSaveGenieInfo	    (pset.get< bool >("SaveGenieInfo", false)),
   fSaveProtoInfo	    (pset.get< bool >("SaveProtoInfo", false)),
   fSaveGeantInfo	    (pset.get< bool >("SaveGeantInfo", false)),
+  fSaveGeantPrimaryOnly	(pset.get< bool >("SaveGeantPrimaryOnly", false)),
+  fSaveGeantLeptonOnly	(pset.get< bool >("SaveGeantLeptonOnly", false)),
   fSaveMCShowerInfo	    (pset.get< bool >("SaveMCShowerInfo", false)),
   fSaveMCTrackInfo	    (pset.get< bool >("SaveMCTrackInfo", false)),
   fSaveHitInfo              (pset.get< bool >("SaveHitInfo", false)),
@@ -5247,6 +5178,7 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
 
     //save neutrino interaction information
     fData->mcevts_truth = mclist.size();
+    std::map<Int_t,Int_t> expected_lep;
     if (fData->mcevts_truth > 0){//at least one mc record
       if (fSaveGenieInfo){
         int neutrino_i = 0;
@@ -5270,6 +5202,7 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
               fData->nu_dcosz_truth[neutrino_i] = mclist[iList]->GetNeutrino().Nu().Pz()/mclist[iList]->GetNeutrino().Nu().P();
             }
             fData->lep_mom_truth[neutrino_i] = mclist[iList]->GetNeutrino().Lepton().P();
+            expected_lep[mclist[iList]->GetNeutrino().Lepton().PdgCode()]+=1;
             if (mclist[iList]->GetNeutrino().Lepton().P()){
               fData->lep_dcosx_truth[neutrino_i] = mclist[iList]->GetNeutrino().Lepton().Px()/mclist[iList]->GetNeutrino().Lepton().P();
               fData->lep_dcosy_truth[neutrino_i] = mclist[iList]->GetNeutrino().Lepton().Py()/mclist[iList]->GetNeutrino().Lepton().P();
@@ -5507,6 +5440,18 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
           //++geant_particle;
           bool isPrimary = pPart->Process() == pri;
           int TrackID = pPart->TrackId();
+          if (fSaveGeantPrimaryOnly)
+            if (isPrimary == false) continue;
+          if (fSaveGeantLeptonOnly)
+          {
+            if (pPart->Mother()!=0) continue;
+            else
+            {
+              if (expected_lep[pPart->PdgCode()]<=0) continue;
+              else expected_lep[pPart->PdgCode()]-=1;
+            }
+          }
+
           TrackIDtoIndex.emplace(TrackID, iPart);
           gpdg.push_back(pPart->PdgCode());
           gmother.push_back(pPart->Mother());

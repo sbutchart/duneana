@@ -56,6 +56,7 @@ dune35t_analysistree:
  SaveProtoInfo:            false # ProtoDUNE specific
  SaveGenieInfo:            false # Don't have in the 35 ton
  SaveGeantInfo:            true
+ SaveGeantPrimaryOnly:     true
  SaveMCShowerInfo:         false # Don't have in the 35 ton 
  SaveMCTrackInfo:          false # Don't have in the 35 ton
  SaveHitInfo:              true

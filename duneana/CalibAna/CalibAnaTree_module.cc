@@ -231,16 +231,24 @@ void dune::CalibAnaTree::analyze(art::Event const& e)
       wids = geometry->ChannelToWire(d->Channel());
     }
     catch(...) {
-      continue;
+      //Fail if something...fails...
+      throw cet::exception("CalibAnaTree_module") << "Raw digit " <<
+            d->Channel() << " has no wires";
     }
 
-    // Ignore channel with no mapped wire
-    if (wids.size() == 0) continue;
+    //We shouldn't ever have a raw digit NOT mapped to a wire
+    if (wids.size() == 0) {
+      throw cet::exception("CalibAnaTree_module") << "Raw digit " <<
+            d->Channel() << " has no wires";
+    }
 
-    // Ignore wires that are already mapped
-    if (rawdigits.count(wids[0])) continue;
-
-    rawdigits[wids[0]] = d;
+    //A raw digit can come from multiple wire segments because some wires
+    //are wrapped
+    for (const auto & w : wids) {
+      // Ignore wires that are already mapped
+      if (rawdigits.count(w)) continue;
+      rawdigits[w] = d;
+    }
   }
 
   // Collect all hits

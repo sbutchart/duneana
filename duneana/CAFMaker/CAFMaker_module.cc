@@ -93,6 +93,7 @@ namespace caf {
       int FillGENIERecord(simb::MCTruth const& mctruth, simb::GTruth const& gtruth);
 
       std::string fCVNLabel;
+      bool fIsAtmoCVN;
       std::string fRegCNNLabel;
 
       std::string fMCTruthLabel;
@@ -100,8 +101,11 @@ namespace caf {
       std::string fMCFluxLabel;
       std::string fPOTSummaryLabel;
 
-      std::string fEnergyRecoNueLabel;
-      std::string fEnergyRecoNumuLabel;
+      std::string fEnergyRecoCaloLabel;
+      std::string fEnergyRecoLepCaloLabel;
+      std::string fEnergyRecoMuRangeLabel;
+      std::string fEnergyRecoMuMcsLabel;
+      std::string fEnergyRecoECaloLabel;
       std::string fDirectionRecoLabelNue;
       std::string fDirectionRecoLabelNumu;
       std::string fPandoraNuVertexModuleLabel;
@@ -139,13 +143,17 @@ namespace caf {
   CAFMaker::CAFMaker(fhicl::ParameterSet const& pset)
     : EDAnalyzer(pset),
       fCVNLabel(pset.get<std::string>("CVNLabel")),
+      fIsAtmoCVN(pset.get<bool>("IsAtmoCVN")),
       fRegCNNLabel(pset.get<std::string>("RegCNNLabel")),
       fMCTruthLabel(pset.get<std::string>("MCTruthLabel")),
       fGTruthLabel(pset.get<std::string>("GTruthLabel")),
       fMCFluxLabel(pset.get<std::string>("MCFluxLabel")),
       fPOTSummaryLabel(pset.get<std::string>("POTSummaryLabel")),
-      fEnergyRecoNueLabel(pset.get<std::string>("EnergyRecoNueLabel")),
-      fEnergyRecoNumuLabel(pset.get<std::string>("EnergyRecoNumuLabel")),
+      fEnergyRecoCaloLabel(pset.get<std::string>("EnergyRecoCaloLabel")),
+      fEnergyRecoLepCaloLabel(pset.get<std::string>("EnergyRecoLepCaloLabel")),
+      fEnergyRecoMuRangeLabel(pset.get<std::string>("EnergyRecoMuRangeLabel")),
+      fEnergyRecoMuMcsLabel(pset.get<std::string>("EnergyRecoMuMcsLabel")),
+      fEnergyRecoECaloLabel(pset.get<std::string>("EnergyRecoECaloLabel")),
       fDirectionRecoLabelNue(pset.get<std::string>("DirectionRecoLabelNue")),
       fDirectionRecoLabelNumu(pset.get<std::string>("DirectionRecoLabelNumu")),
       fPandoraNuVertexModuleLabel(pset.get< std::string >("PandoraNuVertexModuleLabel")),
@@ -451,32 +459,41 @@ namespace caf {
     art::Handle<std::vector<cvn::Result>> cvnin = evt.getHandle<std::vector<cvn::Result>>(fCVNLabel);
 
     if( !cvnin.failedToGet() && !cvnin->empty()) {
-      cvnBranch.isnubar = (*cvnin)[0].GetIsAntineutrinoProbability() > 0.5; //Hardcoded 0.5 as threshold for nu/nubar
+      if(fIsAtmoCVN){ //Hotfix to take care of the fact that the CVN for atmospherics is storing results in a weird way...
+        const std::vector<std::vector<float>> &scores = (*cvnin)[0].fOutput;
+        cvnBranch.nc = scores[0][0];
+        cvnBranch.nue = scores[0][1];
+        cvnBranch.numu = scores[0][2];
+      }
 
-      cvnBranch.nue = (*cvnin)[0].GetNueProbability();
-      cvnBranch.numu = (*cvnin)[0].GetNumuProbability();
-      cvnBranch.nutau = (*cvnin)[0].GetNutauProbability();
-      cvnBranch.nc = (*cvnin)[0].GetNCProbability();
+      else{ //Normal code
+        cvnBranch.isnubar = (*cvnin)[0].GetIsAntineutrinoProbability();
+        cvnBranch.nue = (*cvnin)[0].GetNueProbability();
+        cvnBranch.numu = (*cvnin)[0].GetNumuProbability();
+        cvnBranch.nutau = (*cvnin)[0].GetNutauProbability();
+        cvnBranch.nc = (*cvnin)[0].GetNCProbability();
 
-      cvnBranch.protons0 = (*cvnin)[0].Get0protonsProbability();
-      cvnBranch.protons1 = (*cvnin)[0].Get1protonsProbability();
-      cvnBranch.protons2 = (*cvnin)[0].Get2protonsProbability();
-      cvnBranch.protonsN = (*cvnin)[0].GetNprotonsProbability();
+        cvnBranch.protons0 = (*cvnin)[0].Get0protonsProbability();
+        cvnBranch.protons1 = (*cvnin)[0].Get1protonsProbability();
+        cvnBranch.protons2 = (*cvnin)[0].Get2protonsProbability();
+        cvnBranch.protonsN = (*cvnin)[0].GetNprotonsProbability();
 
-      cvnBranch.chgpi0 = (*cvnin)[0].Get0pionsProbability();
-      cvnBranch.chgpi1 = (*cvnin)[0].Get1pionsProbability();
-      cvnBranch.chgpi2 = (*cvnin)[0].Get2pionsProbability();
-      cvnBranch.chgpiN = (*cvnin)[0].GetNpionsProbability();
+        cvnBranch.chgpi0 = (*cvnin)[0].Get0pionsProbability();
+        cvnBranch.chgpi1 = (*cvnin)[0].Get1pionsProbability();
+        cvnBranch.chgpi2 = (*cvnin)[0].Get2pionsProbability();
+        cvnBranch.chgpiN = (*cvnin)[0].GetNpionsProbability();
 
-      cvnBranch.pizero0 = (*cvnin)[0].Get0pizerosProbability();
-      cvnBranch.pizero1 = (*cvnin)[0].Get1pizerosProbability();
-      cvnBranch.pizero2 = (*cvnin)[0].Get2pizerosProbability();
-      cvnBranch.pizeroN = (*cvnin)[0].GetNpizerosProbability();
+        cvnBranch.pizero0 = (*cvnin)[0].Get0pizerosProbability();
+        cvnBranch.pizero1 = (*cvnin)[0].Get1pizerosProbability();
+        cvnBranch.pizero2 = (*cvnin)[0].Get2pizerosProbability();
+        cvnBranch.pizeroN = (*cvnin)[0].GetNpizerosProbability();
 
-      cvnBranch.neutron0 = (*cvnin)[0].Get0neutronsProbability();
-      cvnBranch.neutron1 = (*cvnin)[0].Get1neutronsProbability();
-      cvnBranch.neutron2 = (*cvnin)[0].Get2neutronsProbability();
-      cvnBranch.neutronN = (*cvnin)[0].GetNneutronsProbability();
+        cvnBranch.neutron0 = (*cvnin)[0].Get0neutronsProbability();
+        cvnBranch.neutron1 = (*cvnin)[0].Get1neutronsProbability();
+        cvnBranch.neutron2 = (*cvnin)[0].Get2neutronsProbability();
+        cvnBranch.neutronN = (*cvnin)[0].GetNneutronsProbability();
+      }
+      
     }
   }
 
@@ -520,28 +537,24 @@ namespace caf {
       mf::LogWarning("CAFMaker") << itag << " does not correspond to a valid RegCNNResult product";
     }
 
-    art::Handle<dune::EnergyRecoOutput> ereconue = evt.getHandle<dune::EnergyRecoOutput>(fEnergyRecoNueLabel);
-    art::Handle<dune::EnergyRecoOutput> ereconumu = evt.getHandle<dune::EnergyRecoOutput>(fEnergyRecoNumuLabel);
+    std::map<std::string, float*> ereco_map = {
+      {fEnergyRecoCaloLabel, &(ErecBranch.calo)},
+      {fEnergyRecoLepCaloLabel, &(ErecBranch.lep_calo)},
+      {fEnergyRecoMuRangeLabel, &(ErecBranch.mu_range)},
+      {fEnergyRecoMuMcsLabel, &(ErecBranch.mu_mcs)},
+      {fEnergyRecoECaloLabel, &(ErecBranch.e_calo)}
+    };
 
-
-    if(ereconue.failedToGet()){
-      mf::LogWarning("CAFMaker") << fEnergyRecoNueLabel << " does not correspond to a valid EnergyRecoOutput product";
+    for(auto [label, record] : ereco_map){
+       art::Handle<dune::EnergyRecoOutput> ereco = evt.getHandle<dune::EnergyRecoOutput>(label);
+       if(ereco.failedToGet()){
+        mf::LogWarning("CAFMaker") << label << " does not correspond to a valid EnergyRecoOutput product";
+       }
+       else{
+        *record = ereco->fNuLorentzVector.E();
+       }
     }
-    else{
-      ErecBranch.calo = ereconue->fNuLorentzVector.E();
-    }
 
-    if(ereconumu.failedToGet()){
-      mf::LogWarning("CAFMaker") << fEnergyRecoNumuLabel << " does not correspond to a valid EnergyRecoOutput product";
-    }
-    else{
-      ErecBranch.lep_calo = ereconumu->fNuLorentzVector.E();
-    }
-
-        //TODO: See if we could add more fine-grained information here.
-
-
-    
   }
 
   //------------------------------------------------------------------------------

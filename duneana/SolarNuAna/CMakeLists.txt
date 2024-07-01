@@ -15,13 +15,11 @@ art_make(BASENAME_ONLY
       art::Utilities 
       lardataobj::RecoBase
       art_root_io::tfile_support
-
     SERVICE_LIBRARIES
       duneana_SolarNuAna
       lardata::Utilities
       lardataobj::RecoBase
       ${ART_ROOT_IO_ROOTINPUT_SOURCE}
-    
     MODULE_LIBRARIES
       dunecore::DuneObj
       lardata::RecoObjects
@@ -44,7 +42,7 @@ art_make(BASENAME_ONLY
       messagefacility::MF_MessageLogger
       cetlib::cetlib 
       duneana_SolarNuAna
-      ROOT::Core
+      ROOT::Core ROOT::Hist ROOT::Tree
 )
 
 install_headers()

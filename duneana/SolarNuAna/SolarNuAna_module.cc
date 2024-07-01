@@ -50,6 +50,7 @@
 #include "art_root_io/TFileDirectory.h"
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "fhiclcpp/ParameterSet.h"
 
 #include "AdjHitsUtils.h"
 #include "AdjOpHitsUtils.h"
@@ -65,9 +66,9 @@ namespace solar
     SolarNuAna(SolarNuAna &&) = delete;
     SolarNuAna &operator=(SolarNuAna const &) = delete;
     SolarNuAna &operator=(SolarNuAna &&) = delete;
+    void analyze(art::Event const &evt) override;
     void reconfigure(fhicl::ParameterSet const &p);
     void beginJob() override;
-    void analyze(art::Event const &evt) override;
 
   private:
     // --- Some of our own functions.
@@ -96,13 +97,14 @@ namespace solar
     float fClusterMatchTime, fAdjClusterRad, fMinClusterCharge, fClusterMatchCharge, fAdjOpFlashY, fAdjOpFlashZ, fAdjOpFlashTime, fAdjOpFlashMaxPERatioCut, fAdjOpFlashMinPECut, fClusterMatchNHit, fClusterAlgoTime;
     std::vector<std::string> fLabels;
     float fOpFlashAlgoTime, fOpFlashAlgoRad, fOpFlashAlgoPE, fOpFlashAlgoTriggerPE;
-    bool fClusterPreselectionTrack, fGenerateAdjOpFlash, fSaveMarleyEDep, fSaveSignalOpHits, fOpFlashAlgoCentroid, fOpFlashAlgoDebug;
+    bool fClusterPreselectionTrack, fClusterPreselectionPrimary, fGenerateAdjOpFlash, fSaveMarleyEDep, fSaveSignalOpHits, fOpFlashAlgoCentroid, fOpFlashAlgoDebug;
 
     // --- Our TTrees, and its associated variables.
     TTree *fConfigTree;
     TTree *fMCTruthTree;
     TTree *fSolarNuAnaTree;
     std::string TNuInteraction;
+    bool MPrimary;
     int Event, Flag, MNHit, MGen, MTPC, MInd0TPC, MInd1TPC, MInd0NHits, MInd1NHits, MMainID, MMainPDG, MMainParentPDG, TrackNum, OpHitNum, OpFlashNum, MTrackNPoints;
     float TNuE, TNuX, TNuY, TNuZ, MTime, MCharge, MMaxCharge, MInd0Charge, MInd1Charge, MInd0MaxCharge, MInd1MaxCharge;
     float MInd0dT, MInd1dT, MInd0RecoY, MInd1RecoY, MRecY, MRecZ, MPur, MMainE, MMainP, MMainK, MMainT, MMainParentE, MMainParentP, MMainParentK, MMainParentT, MTrackChi2;
@@ -112,15 +114,14 @@ namespace solar
     std::vector<float> MAdjClTime, MAdjClCharge, MAdjClInd0Charge, MAdjClInd1Charge, MAdjClMaxCharge, MAdjClInd0MaxCharge, MAdjClInd1MaxCharge;
     std::vector<float> MAdjClNHit, MAdjClInd0NHit, MAdjClInd1NHit, MAdjClRecoY, MAdjClRecoZ, MAdjClR, MAdjClPur, MAdjClMainE, MAdjClMainK;  
     std::vector<float> MAdjClMainX, MAdjClMainY, MAdjClMainZ, MAdjClEndX, MAdjClEndY, MAdjClEndZ, MMarleyFrac, MGenFrac;
-    std::vector<float> MAdjFlashTime, MAdjFlashPE, MAdjFlashNHit, MAdjFlashMaxPE, MAdjFlashRecoX, MAdjFlashRecoY, MAdjFlashRecoZ, MAdjFlashR, MAdjFlashPur;
+    std::vector<float> MAdjFlashTime, MAdjFlashPE, MAdjFlashNHit, MAdjFlashMaxPE, MAdjFlashRecoX, MAdjFlashRecoY, MAdjFlashRecoZ, MAdjFlashR, MAdjFlashPur, MAdjFlashSTD, MAdjFlashFast;
     std::vector<float> MarleyEList, MarleyPList, MarleyKList, MarleyTList, MarleyEndXList, MarleyEndYList, MarleyEndZList, MarleyMaxEDepList, MarleyMaxEDepXList, MarleyMaxEDepYList, MarleyMaxEDepZList;
     std::vector<double> MTrackStart, MTrackEnd;
     std::vector<double> MMainVertex, MEndVertex, MMainParentVertex;
     std::vector<std::map<int, simb::MCParticle>> Parts = {};
-    bool MPrimary;
 
     // --- OpFlash Variables
-    std::vector<float> OpFlashMarlPur, OpFlashPE, OpFlashMaxPE, OpFlashX, OpFlashY, OpFlashZ, OpFlashT, OpFlashDeltaT, OpFlashNHit;
+    std::vector<float> OpFlashMarlPur, OpFlashPE, OpFlashMaxPE, OpFlashX, OpFlashY, OpFlashZ, OpFlashT, OpFlashDeltaT, OpFlashNHit, OpFlashSTD, OpFlashFast;
 
     // --- Histograms to fill about collection plane hits
     float x_f;
@@ -152,43 +153,44 @@ namespace solar
   //......................................................
   void SolarNuAna::reconfigure(fhicl::ParameterSet const &p)
   {
-    fLabels                   = p.get<std::vector<std::string>>("ParticleLabelVector");
-    fRawDigitLabel            = p.get<std::string>("RawDigitLabel");
-    fHitLabel                 = p.get<std::string>("HitLabel");
-    fOpFlashLabel             = p.get<std::string>("OpFlashLabel");
-    fOpHitLabel               = p.get<std::string>("OpHitLabel");
-    fTrackLabel               = p.get<std::string>("TrackLabel");
-    fGEANTLabel               = p.get<std::string>("GEANT4Label");
-    fGeometry                 = p.get<std::string>("Geometry");
-    fDetectorSizeX            = p.get<int>("DetectorSizeX");
-    fDetectorSizeY            = p.get<int>("DetectorSizeY");
-    fDetectorSizeZ            = p.get<int>("DetectorSizeZ");
-    fDetectorDriftTime        = p.get<int>("DetectorDriftTime");
-    fClusterAlgoTime          = p.get<float>("ClusterAlgoTime");
-    fClusterAlgoAdjChannel    = p.get<int>("ClusterAlgoAdjChannel");
-    fClusterMatchNHit         = p.get<float>("ClusterMatchNHit");
-    fClusterMatchCharge       = p.get<float>("ClusterMatchCharge");
-    fClusterMatchTime         = p.get<float>("ClusterMatchTime");
-    fClusterInd0MatchTime     = p.get<float>("ClusterInd0MatchTime");
-    fClusterInd1MatchTime     = p.get<float>("ClusterInd1MatchTime");
-    fClusterPreselectionNHit  = p.get<int>("ClusterPreselectionNHit");
-    fClusterPreselectionTrack = p.get<bool>("ClusterPreselectionTrack");
-    fAdjClusterRad            = p.get<float>("AdjClusterRad");
-    fMinClusterCharge         = p.get<float>("MinClusterCharge");
-    fGenerateAdjOpFlash       = p.get<bool>("GenerateAdjOpFlash");
-    fOpFlashAlgoTime          = p.get<double>("OpFlashAlgoTime");
-    fOpFlashAlgoRad           = p.get<double>("OpFlashAlgoRad");
-    fOpFlashAlgoPE            = p.get<float>("OpFlashAlgoPE");
-    fOpFlashAlgoTriggerPE     = p.get<float>("OpFlashAlgoTriggerPE");
-    fOpFlashAlgoCentroid      = p.get<bool>("OpFlashAlgoCentroid");
-    fOpFlashAlgoDebug         = p.get<bool>("OpFlashAlgoDebug");
-    fAdjOpFlashTime           = p.get<float>("AdjOpFlashTime");
-    fAdjOpFlashY              = p.get<float>("AdjOpFlashY");
-    fAdjOpFlashZ              = p.get<float>("AdjOpFlashZ");
-    fAdjOpFlashMaxPERatioCut  = p.get<float>("AdjOpFlashMaxPERatioCut");
-    fAdjOpFlashMinPECut       = p.get<float>("AdjOpFlashMinPECut");
-    fSaveMarleyEDep           = p.get<bool>("SaveMarleyEDep");
-    fSaveSignalOpHits         = p.get<bool>("SaveSignalOpHits");
+    fLabels                     = p.get<std::vector<std::string>>("ParticleLabelVector");
+    fRawDigitLabel              = p.get<std::string>("RawDigitLabel");
+    fHitLabel                   = p.get<std::string>("HitLabel");
+    fOpFlashLabel               = p.get<std::string>("OpFlashLabel");
+    fOpHitLabel                 = p.get<std::string>("OpHitLabel");
+    fTrackLabel                 = p.get<std::string>("TrackLabel");
+    fGEANTLabel                 = p.get<std::string>("GEANT4Label");
+    fGeometry                   = p.get<std::string>("Geometry");
+    fDetectorSizeX              = p.get<int>("DetectorSizeX");
+    fDetectorSizeY              = p.get<int>("DetectorSizeY");
+    fDetectorSizeZ              = p.get<int>("DetectorSizeZ");
+    fDetectorDriftTime          = p.get<int>("DetectorDriftTime");
+    fClusterAlgoTime            = p.get<float>("ClusterAlgoTime");
+    fClusterAlgoAdjChannel      = p.get<int>("ClusterAlgoAdjChannel");
+    fClusterMatchNHit           = p.get<float>("ClusterMatchNHit");
+    fClusterMatchCharge         = p.get<float>("ClusterMatchCharge");
+    fClusterMatchTime           = p.get<float>("ClusterMatchTime");
+    fClusterInd0MatchTime       = p.get<float>("ClusterInd0MatchTime");
+    fClusterInd1MatchTime       = p.get<float>("ClusterInd1MatchTime");
+    fClusterPreselectionNHit    = p.get<int>("ClusterPreselectionNHit");
+    fClusterPreselectionTrack   = p.get<bool>("ClusterPreselectionTrack");
+    fClusterPreselectionPrimary = p.get<bool>("ClusterPreselectionPrimary");
+    fAdjClusterRad              = p.get<float>("AdjClusterRad");
+    fMinClusterCharge           = p.get<float>("MinClusterCharge");
+    fGenerateAdjOpFlash         = p.get<bool>("GenerateAdjOpFlash");
+    fOpFlashAlgoTime            = p.get<double>("OpFlashAlgoTime");
+    fOpFlashAlgoRad             = p.get<double>("OpFlashAlgoRad");
+    fOpFlashAlgoPE              = p.get<float>("OpFlashAlgoPE");
+    fOpFlashAlgoTriggerPE       = p.get<float>("OpFlashAlgoTriggerPE");
+    fOpFlashAlgoCentroid        = p.get<bool>("OpFlashAlgoCentroid");
+    fOpFlashAlgoDebug           = p.get<bool>("OpFlashAlgoDebug");
+    fAdjOpFlashTime             = p.get<float>("AdjOpFlashTime");
+    fAdjOpFlashY                = p.get<float>("AdjOpFlashY");
+    fAdjOpFlashZ                = p.get<float>("AdjOpFlashZ");
+    fAdjOpFlashMaxPERatioCut    = p.get<float>("AdjOpFlashMaxPERatioCut");
+    fAdjOpFlashMinPECut         = p.get<float>("AdjOpFlashMinPECut");
+    fSaveMarleyEDep             = p.get<bool>("SaveMarleyEDep");
+    fSaveSignalOpHits           = p.get<bool>("SaveSignalOpHits");
   } // Reconfigure
 
   //......................................................
@@ -221,6 +223,7 @@ namespace solar
     fConfigTree->Branch("ClusterInd1MatchTime", &fClusterInd1MatchTime);
     fConfigTree->Branch("ClusterPreselectionNHit", &fClusterPreselectionNHit);
     fConfigTree->Branch("ClusterPreselectionTrack", &fClusterPreselectionTrack);
+    fConfigTree->Branch("ClusterPreselectionPrimary", &fClusterPreselectionPrimary);
     fConfigTree->Branch("AdjClusterRad", &fAdjClusterRad);
     fConfigTree->Branch("MinClusterCharge", &fMinClusterCharge);
     fConfigTree->Branch("GenerateAdjOpFlash", &fGenerateAdjOpFlash);
@@ -385,15 +388,17 @@ namespace solar
     fSolarNuAnaTree->Branch("AdjClEndZ", &MAdjClEndZ);                   // Adj. clusters' end Z [cm]
 
     // Adj. Flash info.
-    fSolarNuAnaTree->Branch("AdjOpFlashTime", &MAdjFlashTime);   // Adj. flash' time [ticks]
-    fSolarNuAnaTree->Branch("AdjOpFlashPE", &MAdjFlashPE);       // Adj. flash' tot #PE [ADC*ticks]
-    fSolarNuAnaTree->Branch("AdjOpFlashNHit", &MAdjFlashNHit);   // Adj. flash' #hits
-    fSolarNuAnaTree->Branch("AdjOpFlashMaxPE", &MAdjFlashMaxPE); // Adj. flash' max #PE [ADC*ticks]
-    fSolarNuAnaTree->Branch("AdjOpFlashRecoY", &MAdjFlashRecoX); // Adj. flash' reco X [cm]
-    fSolarNuAnaTree->Branch("AdjOpFlashRecoY", &MAdjFlashRecoY); // Adj. flash' reco Y [cm]
-    fSolarNuAnaTree->Branch("AdjOpFlashRecoZ", &MAdjFlashRecoZ); // Adj. flash' reco Z [cm]
-    fSolarNuAnaTree->Branch("AdjOpFlashPur", &MAdjFlashPur);     // Adj. flash' purity
-    fSolarNuAnaTree->Branch("AdjOpFlashR", &MAdjFlashR);         // Adj. flash' reco distance [cm]
+    fSolarNuAnaTree->Branch("AdjOpFlashTime", &MAdjFlashTime);     // Adj. flash' time [ticks]
+    fSolarNuAnaTree->Branch("AdjOpFlashPE", &MAdjFlashPE);         // Adj. flash' tot #PE [ADC*ticks]
+    fSolarNuAnaTree->Branch("AdjOpFlashNHit", &MAdjFlashNHit);     // Adj. flash' #hits
+    fSolarNuAnaTree->Branch("AdjOpFlashMaxPE", &MAdjFlashMaxPE);   // Adj. flash' max #PE [ADC*ticks]
+    fSolarNuAnaTree->Branch("AdjOpFlashSTD", &MAdjFlashSTD);       // Adj. flash' STD
+    fSolarNuAnaTree->Branch("AdjOpFlashFast", &MAdjFlashFast);     // Adj. flash' Fast Component
+    fSolarNuAnaTree->Branch("AdjOpFlashRecoY", &MAdjFlashRecoX);   // Adj. flash' reco X [cm]
+    fSolarNuAnaTree->Branch("AdjOpFlashRecoY", &MAdjFlashRecoY);   // Adj. flash' reco Y [cm]
+    fSolarNuAnaTree->Branch("AdjOpFlashRecoZ", &MAdjFlashRecoZ);   // Adj. flash' reco Z [cm]
+    fSolarNuAnaTree->Branch("AdjOpFlashPur", &MAdjFlashPur);       // Adj. flash' purity
+    fSolarNuAnaTree->Branch("AdjOpFlashR", &MAdjFlashR);           // Adj. flash' reco distance [cm]
 
     fConfigTree->AddFriend(fSolarNuAnaTree);
     fMCTruthTree->AddFriend(fSolarNuAnaTree);
@@ -639,6 +644,8 @@ namespace solar
         {
           double OpFlashPur = 0;
           OpFlashMaxPE.push_back(TheFlash.MaxPE);
+          OpFlashSTD.push_back(TheFlash.STD);
+          OpFlashFast.push_back(TheFlash.FastToTotal);
           OpFlashPE.push_back(TheFlash.PE);
           OpFlashX.push_back(TheFlash.X);
           OpFlashY.push_back(TheFlash.Y);
@@ -686,8 +693,8 @@ namespace solar
           OpFlashMarlPur.push_back(OpFlashPur); 
           if (abs(TheFlash.Time) < 20)
           {
-            mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (ratio/tot) " << TheFlash.MaxPE/TheFlash.PE << "/" << TheFlash.PE << " with purity " << OpFlashPur << " time " << TheFlash.Time; 
-            sOpFlashTruth += "Marley OpFlash PE (fast/ratio/tot) " + str(TheFlash.FastToTotal) + "/" + str(TheFlash.MaxPE/TheFlash.PE) + "/" +  str(TheFlash.PE) + " with purity " + str(OpFlashPur) + " time " + str(TheFlash.Time) + " vertex (" + str(TheFlash.X) + ", " + str(TheFlash.Y) + ", " + str(TheFlash.Z) + ")\n";
+            mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (fast/ratio/tot/STD) " << TheFlash.FastToTotal << "/" << TheFlash.MaxPE/TheFlash.PE << "/" << TheFlash.PE << "/" << TheFlash.STD << " with purity " << OpFlashPur << " time " << TheFlash.Time; 
+            sOpFlashTruth += "Marley OpFlash PE (fast/ratio/tot/STD) " + str(TheFlash.FastToTotal) + "/" + str(TheFlash.MaxPE/TheFlash.PE) + "/" +  str(TheFlash.PE) + "/" + str(TheFlash.STD) + " with purity " + str(OpFlashPur) + " time " + str(TheFlash.Time) + " vertex (" + str(TheFlash.X) + ", " + str(TheFlash.Y) + ", " + str(TheFlash.Z) + ")\n";
           }
         }
       }
@@ -709,8 +716,7 @@ namespace solar
         recob::OpFlash TheFlash = *OpFlashList[i];
         std::vector<art::Ptr<recob::OpHit>> MatchedHits = OpAssns.at(i);
         mf::LogDebug("SolarNuAna") << "Assigning OpHit to Flash";
-        double TotalFlashPE, MaxOpHitPE, FlashTime;
-        TotalFlashPE = MaxOpHitPE = FlashTime = 0;
+        double FlashStdDev = 0.0, varY = 0.0, varZ = 0.0, TotalFlashPE = 0, MaxOpHitPE = 0, FlashTime = 0;
         int NMatchedHits = MatchedHits.size();
         for (int j = 0; j < NMatchedHits; j++)
         { // Loop over OpHits in the flash
@@ -726,8 +732,10 @@ namespace solar
           } 
           auto OpHitXYZ = geo->OpDetGeoFromOpChannel(OpHit.OpChannel()).GetCenter();
           TotalFlashPE += OpHit.PE();
-          FlashTime += OpHit.PeakTime()*OpHit.PE();
-          if (OpHit.PE() > fAdjOpFlashMinPECut/NMatchedHits){
+          varY += pow(TheFlash.YCenter() - OpHitXYZ.Y(), 2) * OpHit.PE();
+          varZ += pow(TheFlash.ZCenter() - OpHitXYZ.Z(), 2) * OpHit.PE();
+          FlashTime += OpHit.PeakTime() * OpHit.PE();
+          if (OpHit.PE() > fOpFlashAlgoPE){
             SOpHitPur.push_back(ThisOphitPurity/int(ThisOpHitTrackIds.size()));
             if (OpHit.PE() > MaxOpHitPE){MaxOpHitPE = OpHit.PE();};
             SOpHitChannel.push_back(OpHit.OpChannel());
@@ -739,7 +747,10 @@ namespace solar
             SOpHitFlashID.push_back(i);
           }
         } // End of OpHit loop
+        varY = varY / TotalFlashPE;
+        varZ = varZ / TotalFlashPE;
         FlashTime = FlashTime / TotalFlashPE;
+        FlashStdDev = sqrt(varY + varZ);
 
         mf::LogDebug("SolarNuAna") << "Evaluating Flash purity";
         int TerminalOutput = supress_stdout();
@@ -752,6 +763,8 @@ namespace solar
         {
           OpFlashMarlPur.push_back(OpFlashPur);
           OpFlashMaxPE.push_back(MaxOpHitPE);
+          OpFlashSTD.push_back(FlashStdDev);
+          OpFlashFast.push_back(TheFlash.FastToTotal());
           OpFlashPE.push_back(TheFlash.TotalPE());
           OpFlashX.push_back(TheFlash.XCenter());
           OpFlashY.push_back(TheFlash.YCenter());
@@ -760,10 +773,10 @@ namespace solar
           OpFlashDeltaT.push_back(TheFlash.TimeWidth());
           OpFlashNHit.push_back(MatchedHits.size());
         }
-        if (abs(TheFlash.Time()) < 5)
+        if (abs(TheFlash.Time()) < 10)
         {
-          mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (max/tot) " << MaxOpHitPE << "/" << TheFlash.TotalPE() << " with purity " << OpFlashPur << " time " << TheFlash.Time(); 
-          sOpFlashTruth += "Marley OpFlash PE (max/tot) " + str(MaxOpHitPE) + "/" +  str(TheFlash.TotalPE()) + " with purity " + str(OpFlashPur) + " time " + str(TheFlash.Time()) + " vertex (" + str(TheFlash.YCenter()) + ", " + str(TheFlash.ZCenter()) + ")\n";
+          mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (max/tot/STD) " << MaxOpHitPE << "/" << TheFlash.TotalPE() << "/" << FlashStdDev << " with purity " << OpFlashPur << " time " << TheFlash.Time(); 
+          sOpFlashTruth += "Marley OpFlash PE (max/tot/STD) " + str(MaxOpHitPE) + "/" +  str(TheFlash.TotalPE()) + "/" +  str(FlashStdDev) + " with purity " + str(OpFlashPur) + " time " + str(TheFlash.Time()) + " vertex (" + str(TheFlash.YCenter()) + ", " + str(TheFlash.ZCenter()) + ")\n";
         }
       }
     }
@@ -1014,11 +1027,7 @@ namespace solar
         {
           for (int jj = 0; jj < int(AllPlaneClusters[0].size()); jj++)
           {
-            if (ClNHits[0][jj] < (1 - fClusterMatchNHit) * ClNHits[2][ii] || ClNHits[0][jj] > (1 + fClusterMatchNHit) * ClNHits[2][ii])
-            {
-              continue;
-            }
-            if (ClCharge[0][jj] < (1 - fClusterMatchCharge) * ClCharge[2][ii] || ClCharge[0][jj] > (1 + fClusterMatchCharge) * ClCharge[2][ii])
+            if (abs(ClNHits[0][jj] - ClNHits[2][ii]) / ClNHits[2][ii] > fClusterMatchNHit || abs(ClCharge[0][jj] - ClCharge[2][ii]) / ClCharge[2][ii] > fClusterMatchCharge)
             {
               continue;
             }
@@ -1043,11 +1052,7 @@ namespace solar
         {
           for (int zz = 0; zz < int(AllPlaneClusters[1].size()); zz++)
           {
-            if (ClNHits[1][zz] < (1 - fClusterMatchNHit) * ClNHits[2][ii] || ClNHits[1][zz] > (1 + fClusterMatchNHit) * ClNHits[2][ii])
-            {
-              continue;
-            }
-            if (ClCharge[1][zz] < (1 - fClusterMatchCharge) * ClCharge[2][ii] || ClCharge[1][zz] > (1 + fClusterMatchCharge) * ClCharge[2][ii])
+            if (abs(ClNHits[1][zz] - ClNHits[2][ii]) / ClNHits[2][ii] > fClusterMatchNHit || abs(ClCharge[1][zz] - ClCharge[2][ii]) / ClCharge[2][ii] > fClusterMatchCharge)
             {
               continue;
             }
@@ -1189,6 +1194,8 @@ namespace solar
         MAdjFlashPE = {};
         MAdjFlashNHit = {};
         MAdjFlashMaxPE = {};
+        MAdjFlashSTD = {};
+        MAdjFlashFast = {};
         MAdjFlashRecoX = {};
         MAdjFlashRecoY = {};
         MAdjFlashRecoZ = {};
@@ -1316,6 +1323,8 @@ namespace solar
           MAdjFlashPE.push_back(OpFlashPE[j]);
           MAdjFlashNHit.push_back(OpFlashNHit[j]);
           MAdjFlashMaxPE.push_back(OpFlashMaxPE[j]);
+          MAdjFlashSTD.push_back(OpFlashSTD[j]);
+          MAdjFlashFast.push_back(OpFlashFast[j]);
           MAdjFlashRecoX.push_back(OpFlashX[j]);
           MAdjFlashRecoY.push_back(OpFlashY[j]);
           MAdjFlashRecoZ.push_back(OpFlashZ[j]);
@@ -1367,16 +1376,16 @@ namespace solar
           MEndVertex = {-1e6, -1e6, -1e6};
           MMainPDG = 0;
           MMainE = -1e6;
+          MMainT = -1e6;
           MMainP = -1e6;
           MMainK = -1e6;
-          MMainT = -1e6;
 
           MMainParentVertex = {-1e6, -1e6, -1e6};
           MMainParentPDG = 0;
           MMainParentE = -1e6;
+          MMainParentT = -1e6;
           MMainParentP = -1e6;
           MMainParentK = -1e6;
-          MMainParentT = -1e6;
         }
         else
         {
@@ -1384,9 +1393,9 @@ namespace solar
           MEndVertex = {MClTruth->EndX(), MClTruth->EndY(), MClTruth->EndZ()};
           MMainPDG = MClTruth->PdgCode();
           MMainE = 1e3*MClTruth->E();
+          MMainT = MClTruth->T();
           MMainP = 1e3*MClTruth->P();
           MMainK = MMainE - 1e3*MClTruth->Mass();
-          MMainT = MClTruth->T();
           // If exists add the parent information
           const simb::MCParticle *MClParentTruth;
           int TerminalOutput = supress_stdout();
@@ -1397,20 +1406,21 @@ namespace solar
             MMainParentVertex = {-1e6, -1e6, -1e6};
             MMainParentPDG = 0;
             MMainParentE = -1e6;
+            MMainParentT = -1e6;
             MMainParentP = -1e6;
             MMainParentK = -1e6;
-            MMainParentT = -1e6;
           }
           else
           {
             MMainParentVertex = {MClParentTruth->Vx(), MClParentTruth->Vy(), MClParentTruth->Vz()};
             MMainParentPDG = MClParentTruth->PdgCode();
             MMainParentE = 1e3*MClParentTruth->E();
+            MMainParentT = MClParentTruth->T();
             MMainParentP = 1e3*MClParentTruth->P();
             MMainParentK = MMainParentE - 1e3*MClParentTruth->Mass();
-            MMainParentT = MClParentTruth->T();
           }
         }
+        if (fClusterPreselectionPrimary){if (MPrimary == false){continue;}}
         if (fClusterPreselectionTrack){if (TrackMatch == false){continue;}}
         fSolarNuAnaTree->Fill();
         hDriftTime->Fill(x_f, MTime);
@@ -1456,6 +1466,8 @@ namespace solar
     // ThisGeneratorParts.clear();
     OpFlashMarlPur.clear();
     OpFlashPE.clear();
+    OpFlashSTD.clear();
+    OpFlashFast.clear();
     OpFlashMaxPE.clear();
     OpFlashX.clear();
     OpFlashY.clear();
@@ -1531,7 +1543,7 @@ namespace solar
     {
       mf::LogInfo("SolarNuAna") << "\033[" << Color << "m" << MyString << "\033[0m";
     }
-    if (Type == "Degub")
+    if (Type == "Debug")
     {
       mf::LogDebug("SolarNuAna") << "\033[" << Color << "m" << MyString << "\033[0m";
     }
@@ -1653,4 +1665,5 @@ namespace solar
     close(fd);
   }
 } // namespace solar
+
 DEFINE_ART_MODULE(solar::SolarNuAna)

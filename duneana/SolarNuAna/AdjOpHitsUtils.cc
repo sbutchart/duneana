@@ -36,7 +36,9 @@ namespace solar
       double XSum = 0;
       double YSum = 0;
       double ZSum = 0;
+      double STD = 0;
       
+      // Compute total number of PE and MaxPE.
       for (art::Ptr<recob::OpHit> PDSHit : ClusterCopy)
       {
         NHit++;
@@ -45,31 +47,54 @@ namespace solar
           MaxPE = PDSHit->PE();
         PEperOpDet.push_back(PDSHit->PE());
         TimeSum += PDSHit->PeakTime() * PDSHit->PE();
-        auto OpHitXYZ = geo->OpDetGeoFromOpChannel(PDSHit->OpChannel()).GetCenter();
-        XSum += OpHitXYZ.X() * PDSHit->PE();
-        YSum += OpHitXYZ.Y() * PDSHit->PE();
-        ZSum += OpHitXYZ.Z() * PDSHit->PE();
       }
       Time = TimeSum / PE;
-      X = XSum / PE;
-      Y = YSum / PE;
-      Z = ZSum / PE;
-      // Alternatively compute the centroid of the flash in 3D space
+      
+      // Compute flash center from weighted average of "hottest" ophits.
+      float HotPE = 0;
+      for (art::Ptr<recob::OpHit> PDSHit : ClusterCopy)
+      {
+        auto OpHitXYZ = geo->OpDetGeoFromOpChannel(PDSHit->OpChannel()).GetCenter();
+        if (PDSHit->PE() > 0.8 * MaxPE){
+          XSum += OpHitXYZ.X() * PDSHit->PE();
+          YSum += OpHitXYZ.Y() * PDSHit->PE();
+          ZSum += OpHitXYZ.Z() * PDSHit->PE();
+          HotPE += PDSHit->PE();
+        }
+      }
+      X = XSum / HotPE;
+      Y = YSum / HotPE;
+      Z = ZSum / HotPE;
+      
+      // Alternatively compute the centroid of the flash in 3D space.
       if (fOpFlashAlgoCentroid) 
       { 
         CalcCentroid(ClusterCopy, X, Y, Z);
       }
 
+      // Compute the flash width and STD from divergence of 1/r² signal decay.
+      std::vector<float> varYZ = {};
       for (art::Ptr<recob::OpHit> PDSHit : ClusterCopy)
       {
         auto OpHitXYZ = geo->OpDetGeoFromOpChannel(PDSHit->OpChannel()).GetCenter();
         TimeWidth += (PDSHit->PeakTime() - Time) * (PDSHit->PeakTime() - Time);
         YWidth += (OpHitXYZ.Y() - Y) * (OpHitXYZ.Y() - Y);
         ZWidth += (OpHitXYZ.Z() - Z) * (OpHitXYZ.Z() - Z);
+        varYZ.push_back(sqrt(pow(Y - OpHitXYZ.Y(), 2) + pow(Z - OpHitXYZ.Z(), 2)) * PDSHit->PE());
       }
+
       TimeWidth = sqrt(TimeWidth / ClusterCopy.size());
       YWidth = sqrt(YWidth / ClusterCopy.size());
       ZWidth = sqrt(ZWidth / ClusterCopy.size());
+      // Compute STD of varYZ
+      float varYZmean = 0;
+      for (float var : varYZ) {varYZmean += var;}
+      varYZmean /= varYZ.size();
+      float varYZstd = 0;
+      for (float var : varYZ) {varYZstd += pow(var - varYZmean, 2);}
+      varYZstd = sqrt(varYZstd / varYZ.size());
+      STD = varYZstd;
+
       
       // Compute FastToTotal according to the #PEs arriving within the first 10% of the time window wrt the total #PEs
       for (art::Ptr<recob::OpHit> PDSHit : ClusterCopy)
@@ -78,7 +103,7 @@ namespace solar
           FastToTotal += PDSHit->PE();
       }
       FastToTotal /= PE;
-      FlashVec.push_back(FlashInfo{NHit, Time, TimeWidth, PE, MaxPE, PEperOpDet, FastToTotal, X, Y, Z, YWidth, ZWidth});
+      FlashVec.push_back(FlashInfo{NHit, Time, TimeWidth, PE, MaxPE, PEperOpDet, FastToTotal, X, Y, Z, YWidth, ZWidth, STD});
     }
     return;
   }
@@ -129,7 +154,11 @@ namespace solar
       // Make use of the fact that the hits are sorted in time to only consider the hits that are adjacent in the vector up to a certain time range
       for (auto it2 = it + 1; it2 != MyVec.end(); ++it2)
       {
-        const auto &adjHit = *it2; // Update adjHit here
+        // make sure we don't go out of bounds and the pointer is valid
+        if (it2 == MyVec.end())
+          break;
+        auto &adjHit = *it2; // Update adjHit here
+        
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > TimeRange)
           break;
         // If sign of x is the same, then the two hits are in the same drift volume and can be clustered, else skip
@@ -151,9 +180,14 @@ namespace solar
           ClusteredHits[std::distance(MyVec.begin(), it2)] = true;
         }
       }
-      for (auto it3 = it - 1; it3 != MyVec.begin(); --it3)
+
+      for (auto it3 = it - 1; it3 != MyVec.begin() - 1; --it3)
       {
-        const auto &adjHit = *it3;
+        // make sure we don't go out of bounds and the pointer is valid
+        if (it3 == MyVec.begin())
+          break;
+        auto &adjHit = *it3;
+
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > TimeRange)
           break;
         if (opDetCenters[hit->OpChannel()].X() * opDetCenters[adjHit->OpChannel()].X() < 0)
@@ -174,6 +208,7 @@ namespace solar
           if (HeavDebug) std::cout << "Adding hit: CH " << adjHit->OpChannel() << " Time " << adjHit->PeakTime() << std::endl;
         }
       }
+
       if (main_hit)
       {
         Clusters.push_back(std::move(AdjHitVec));
@@ -400,5 +435,34 @@ namespace solar
     x = firstHitX;
     y = bestY;
     z = bestZ;
+  }
+  
+  double AdjOpHitsUtils::FlashMatchResidual(std::vector<art::Ptr<recob::OpHit>> Hits, double &x, double &y, double &z)
+  {
+    // Initialize variables
+    double residuals = 0;
+
+    // Start with the first hit in the flash as reference point
+    double firstHitY = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().Y();
+    double firstHitZ = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().Z();
+    // Get the first hit PE
+    double firstHitPE = Hits[0]->PE();
+    double distSq = pow(firstHitY - y, 2) + pow(firstHitZ - z, 2);
+    double refHitPE = firstHitPE / (pow(x, 2) / (pow(x, 2) + distSq));
+
+    // Loop over all OpHits in the flash and compute the squared distance to the reference point
+    for (const auto &hit : Hits)
+    {
+      double hitY = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter().Y();
+      double hitZ = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter().Z();
+      // Make a residual calculation of the PE distribution in the OpHits of the flash wrt the charge deposition in the TPC.
+      distSq = pow(hitY - y, 2) + pow(hitZ - z, 2);
+      // The expected distribution of PE corresponds to a decrease of 1/r² with the distance from the flash center. Between adjacent OpHits, the expected decrease in charge has the form r²/(r²+d²)
+      double expectedPE = refHitPE * pow(x, 2) / (pow(x, 2) + distSq);
+      residuals += pow(hit->PE() - expectedPE, 2);
+    }
+
+    residuals/=Hits.size();
+    return residuals;
   }
 } // namespace solar

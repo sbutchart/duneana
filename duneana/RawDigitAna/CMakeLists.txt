@@ -1,6 +1,6 @@
 art_make(BASENAME_ONLY
 	 MODULE_LIBRARIES
-         lardataalg::DetectorInfo
+	 lardataalg::DetectorInfo
 	 lardataobj::RawData
 	 lardataobj::RecoBase
 	 larcorealg::Geometry

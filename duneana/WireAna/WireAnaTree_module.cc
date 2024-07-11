@@ -88,7 +88,7 @@ void wire::WireAnaTree::endJob(){
 void wire::WireAnaTree::analyze(art::Event const& e)
 {
   // Print a hello message.
-  std::cout << "Hello, WireAnaTree! " << std::endl;
+  mf::LogInfo("WireAnaTree") << "Hello, WireAnaTree! ";
   // Implementation of required member function here.
   auto const& Wires = *(e.getValidHandle<std::vector<recob::Wire>>(fCalWireModuleLabel));
   fRun = e.run();
@@ -96,8 +96,8 @@ void wire::WireAnaTree::analyze(art::Event const& e)
   fEvent = e.id().event();
 
   // Print general info about event and wires
-  std::cout << "Run: " << fRun << " Subrun: " << fSubrun << " Event: " << fEvent << std::endl;
-  std::cout << "Number of wires: " << Wires.size() << std::endl;
+  mf::LogInfo("WireAnaTree") << "Run: " << fRun << " Subrun: " << fSubrun << " Event: " << fEvent;
+  mf::LogInfo("WireAnaTree") << "Number of wires: " << Wires.size();
   unsigned int idx =0;
   for (recob::Wire const& wire: Wires) {
     unsigned int jdx =0;

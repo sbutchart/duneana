@@ -71,6 +71,7 @@
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "larreco/RecoAlg/TrackMomentumCalculator.h"
 #include "lardataobj/AnalysisBase/CosmicTag.h"
@@ -439,6 +440,7 @@ namespace dune {
       PFParticleData_t<Short_t> pfp_vertexID;     ///< the ID of the vertex belonging to this PFParticle
       PFParticleData_t<Short_t> pfp_isShower;     ///< whether this PFParticle corresponds to a shower
       PFParticleData_t<Short_t> pfp_isTrack;      ///< whether this PFParticle corresponds to a track
+      PFParticleData_t<Float_t> pfp_trackScore;   ///< track score of this PFP
       PFParticleData_t<Short_t> pfp_trackID;      ///< the ID of the track object corresponding to this PFParticle, if !isShower
       PFParticleData_t<Short_t> pfp_showerID;     ///< the ID of the shower object corresponding to this PFParticle, if isShower
 
@@ -2043,6 +2045,7 @@ void dune::AnalysisTreeDataStruct::PFParticleDataStruct::Resize(size_t nPFPartic
   pfp_parentID.resize(MaxPFParticles);
   pfp_vertexID.resize(MaxPFParticles);
   pfp_isShower.resize(MaxPFParticles);
+  pfp_trackScore.resize(MaxPFParticles);
   pfp_isTrack.resize(MaxPFParticles);
   pfp_trackID.resize(MaxPFParticles);
   pfp_showerID.resize(MaxPFParticles);
@@ -2062,6 +2065,7 @@ void dune::AnalysisTreeDataStruct::PFParticleDataStruct::Clear() {
   FillWith(pfp_parentID, -9999);
   FillWith(pfp_vertexID, -9999);
   FillWith(pfp_isShower, -9999);
+  FillWith(pfp_trackScore, -9999);
   FillWith(pfp_isTrack, -9999);
   FillWith(pfp_trackID, -9999);
   FillWith(pfp_showerID, -9999);
@@ -2124,6 +2128,9 @@ void dune::AnalysisTreeDataStruct::PFParticleDataStruct::SetAddresses(
 
   BranchName = "pfp_isShower";
   CreateBranch(BranchName, pfp_isShower, BranchName + NPFParticleIndexStr + "/S");
+
+  BranchName = "pfp_trackScore";
+  CreateBranch(BranchName, pfp_trackScore, BranchName + NPFParticleIndexStr + "/F");
 
   BranchName = "pfp_isTrack";
   CreateBranch(BranchName, pfp_isTrack, BranchName + NPFParticleIndexStr + "/S");
@@ -4573,6 +4580,9 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
     lar_pandora::PFParticlesToShowers pfParticleToShowerMap;
     lar_pandora::LArPandoraHelper::CollectShowers(evt, fShowerModuleLabel[0], allPfParticleShowers, pfParticleToShowerMap);
 
+
+    art::FindManyP<larpandoraobj::PFParticleMetadata> theMetadataAssns(pfparticlelist, evt, fPFParticleModuleLabel);
+
     for (size_t i = 0; i < NPFParticles && i < PFParticleData.GetMaxPFParticles() ; ++i){
       PFParticleData.pfp_selfID[i] = pfparticlelist[i]->Self();
       PFParticleData.pfp_isPrimary[i] = (Short_t)pfparticlelist[i]->IsPrimary();
@@ -4610,6 +4620,12 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
       }
       else
         PFParticleData.pfp_isTrack[i] = 0;
+
+      const larpandoraobj::PFParticleMetadata metaData = *((theMetadataAssns.at(pfparticlelist[i]->Self())).at(0));
+      const std::map<std::string, float> &propMap = metaData.GetPropertiesMap();
+      if(propMap.count("TrackScore") > 0){
+        PFParticleData.pfp_trackScore[i] = propMap.at("TrackScore");
+      }
 
       // Set the track ID.
       auto trackMapIter = pfParticleToTrackMap.find(pfparticlelist[i]);

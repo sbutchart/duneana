@@ -48,6 +48,10 @@ dune35t_analysistree:
  AngleRecoNuePFPLabel: "angularreconuepfp"
  AngleRecoNumuPFPLabel: "angularreconumupfp"
 
+ SaveCVNScoresInfo: false
+ IsAtmoCVN: false
+ CVNLabel: "cvneva:cvnresult"
+
 
  UseBuffers:               false
  IgnoreMissingShowers:     false

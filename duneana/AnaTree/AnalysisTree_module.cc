@@ -71,6 +71,7 @@
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "larreco/RecoAlg/TrackMomentumCalculator.h"
 #include "lardataobj/AnalysisBase/CosmicTag.h"
@@ -83,6 +84,8 @@
 #include "duneopdet/OpticalDetector/OpFlashSort.h"
 #include "dunereco/FDSensOpt/FDSensOptData/EnergyRecoOutput.h"
 #include "dunereco/FDSensOpt/FDSensOptData/AngularRecoOutput.h"
+#include "dunereco/CVN/func/InteractionType.h"
+#include "dunereco/CVN/func/Result.h"
 
 #include "lardata/ArtDataHelper/MVAReader.h"
 
@@ -439,6 +442,7 @@ namespace dune {
       PFParticleData_t<Short_t> pfp_vertexID;     ///< the ID of the vertex belonging to this PFParticle
       PFParticleData_t<Short_t> pfp_isShower;     ///< whether this PFParticle corresponds to a shower
       PFParticleData_t<Short_t> pfp_isTrack;      ///< whether this PFParticle corresponds to a track
+      PFParticleData_t<Float_t> pfp_trackScore;   ///< track score of this PFP
       PFParticleData_t<Short_t> pfp_trackID;      ///< the ID of the track object corresponding to this PFParticle, if !isShower
       PFParticleData_t<Short_t> pfp_showerID;     ///< the ID of the shower object corresponding to this PFParticle, if isShower
 
@@ -492,6 +496,7 @@ namespace dune {
         tdCnn = 0x40000,
         tdnuEnReco = 0x80000,
         tdnuAngleReco = 0x100000,
+        tdCVNScores = 0x200000,
         tdDefault = 0
         }; // DataBits_t
 
@@ -621,6 +626,33 @@ namespace dune {
     Float_t Numu_pfp_dcosy_angle;   // Reconstructed direction along y-axis
     Float_t Numu_pfp_dcosz_angle;   // Reconstructed direction along z-axis
     Int_t AngleRecoMethodNumuPFP;  // Method use for angle numu angle reconstruction using all PFP
+
+    // CVN Information
+    Float_t cvnisnubar;
+    Float_t cvnnue;
+    Float_t cvnnumu;
+    Float_t cvnnutau;
+    Float_t cvnnc;
+
+    Float_t cvnprotons0;
+    Float_t cvnprotons1;
+    Float_t cvnprotons2;
+    Float_t cvnprotonsN;
+
+    Float_t cvnchgpi0;
+    Float_t cvnchgpi1;
+    Float_t cvnchgpi2;
+    Float_t cvnchgpiN;
+
+    Float_t cvnpizero0;
+    Float_t cvnpizero1;
+    Float_t cvnpizero2;
+    Float_t cvnpizeroN;
+
+    Float_t cvnneutron0;
+    Float_t cvnneutron1;
+    Float_t cvnneutron2;
+    Float_t cvnneutronN;
 
     //Cluster Information
     Short_t nclusters;				      //number of clusters in a given event
@@ -1034,6 +1066,9 @@ namespace dune {
     /// Returns whether we have NuAngleReco info data
     bool hasNuEnAngleInfo() const { return bits & tdnuAngleReco; }
 
+    /// Returns whether we have CVN Score data
+    bool hasCVNScores() const { return bits & tdCVNScores; }
+
     /// Returns whether we have PFParticle data
     bool hasPFParticleInfo() const { return bits & tdPFParticle; }
 
@@ -1338,6 +1373,7 @@ namespace dune {
     std::string fAngleRecoNumuLabel;
     std::string fAngleRecoNuePFPLabel;
     std::string fAngleRecoNumuPFPLabel;
+    std::string fCVNLabel;
     std::vector<std::string> fShowerModuleLabel;
     std::vector<std::string> fCalorimetryModuleLabel;
     std::vector<std::string> fParticleIDModuleLabel;
@@ -1363,6 +1399,8 @@ namespace dune {
     bool fSaveVertexInfo; ///whether to extract and save Vertex information
     bool fSaveNuRecoEnergyInfo; ///whether to extract and save Neutrino reconstructed energy information. Call products first!
     bool fSaveNuRecoAngleInfo; ///whether to extract and save Neutrino reconstructed angle information. Call products first!
+    bool fSaveCVNScoresInfo; // wheter to extract and save CVN score
+    bool fIsAtmoCVN; // if CVN is for atmospherics
     bool fSaveClusterInfo;  ///whether to extract and save Cluster information
     bool fSavePandoraNuVertexInfo; ///whether to extract and save nu vertex information from Pandora
     bool fSaveFlashInfo;  ///whether to extract and save Flash information
@@ -1384,6 +1422,7 @@ namespace dune {
     bool isCosmics;      ///< if it contains cosmics
     bool fSaveCaloCosmics; ///< save calorimetry information for cosmics
     float fG4minE;         ///< Energy threshold to save g4 particle info
+
 
     double ActiveBounds[6]; // Cryostat boundaries ( neg x, pos x, neg y, pos y, neg z, pos z )
 
@@ -1422,6 +1461,7 @@ namespace dune {
         fData->SetBits(AnalysisTreeDataStruct::tdVertex, !fSaveVertexInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdnuEnReco, !fSaveNuRecoEnergyInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdnuAngleReco, !fSaveNuRecoAngleInfo);
+        fData->SetBits(AnalysisTreeDataStruct::tdCVNScores, !fSaveCVNScoresInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdAuxDet, !fSaveAuxDetInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdPFParticle, !fSavePFParticleInfo);
         fData->SetBits(AnalysisTreeDataStruct::tdSpacePoint, !fSaveSpacePointSolverInfo);
@@ -2043,6 +2083,7 @@ void dune::AnalysisTreeDataStruct::PFParticleDataStruct::Resize(size_t nPFPartic
   pfp_parentID.resize(MaxPFParticles);
   pfp_vertexID.resize(MaxPFParticles);
   pfp_isShower.resize(MaxPFParticles);
+  pfp_trackScore.resize(MaxPFParticles);
   pfp_isTrack.resize(MaxPFParticles);
   pfp_trackID.resize(MaxPFParticles);
   pfp_showerID.resize(MaxPFParticles);
@@ -2062,6 +2103,7 @@ void dune::AnalysisTreeDataStruct::PFParticleDataStruct::Clear() {
   FillWith(pfp_parentID, -9999);
   FillWith(pfp_vertexID, -9999);
   FillWith(pfp_isShower, -9999);
+  FillWith(pfp_trackScore, -9999);
   FillWith(pfp_isTrack, -9999);
   FillWith(pfp_trackID, -9999);
   FillWith(pfp_showerID, -9999);
@@ -2124,6 +2166,9 @@ void dune::AnalysisTreeDataStruct::PFParticleDataStruct::SetAddresses(
 
   BranchName = "pfp_isShower";
   CreateBranch(BranchName, pfp_isShower, BranchName + NPFParticleIndexStr + "/S");
+
+  BranchName = "pfp_trackScore";
+  CreateBranch(BranchName, pfp_trackScore, BranchName + NPFParticleIndexStr + "/F");
 
   BranchName = "pfp_isTrack";
   CreateBranch(BranchName, pfp_isTrack, BranchName + NPFParticleIndexStr + "/S");
@@ -2479,6 +2524,32 @@ void dune::AnalysisTreeDataStruct::ClearLocalData() {
   Numu_pfp_dcosy_angle   = -99999.;
   Numu_pfp_dcosz_angle   = -99999.;
   AngleRecoMethodNumuPFP = -99999;
+
+  cvnisnubar  = -99999.;
+  cvnnue      = -99999.;
+  cvnnumu     = -99999.;
+  cvnnutau    = -99999.;
+  cvnnc       = -99999.;
+
+  cvnprotons0 = -99999.;
+  cvnprotons1 = -99999.;
+  cvnprotons2 = -99999.;
+  cvnprotonsN = -99999.;
+
+  cvnchgpi0   = -99999.;
+  cvnchgpi1   = -99999.;
+  cvnchgpi2   = -99999.;
+  cvnchgpiN   = -99999.;
+
+  cvnpizero0  = -99999.;
+  cvnpizero1  = -99999.;
+  cvnpizero2  = -99999.;
+  cvnpizeroN  = -99999.;
+
+  cvnneutron0 = -99999.;
+  cvnneutron1 = -99999.;
+  cvnneutron2 = -99999.;
+  cvnneutronN = -99999.;
 
   mcevts_truth = -99999;
   mcevts_truthcry = -99999;
@@ -3112,6 +3183,35 @@ void dune::AnalysisTreeDataStruct::SetAddresses(
     CreateBranch("AngleRecoMethodNumuPFP", &AngleRecoMethodNumuPFP, "AngleRecoMethodNumuPFP/I");
   }
 
+  if (hasCVNScores()){
+    CreateBranch("cvnisnubar", &cvnisnubar, "cvnisnubar/F");
+    CreateBranch("cvnnue", &cvnnue, "cvnnue/F");
+    CreateBranch("cvnnumu", &cvnnumu, "cvnnumu/F");
+    CreateBranch("cvnnutau", &cvnnutau, "cvnnutau/F");
+    CreateBranch("cvnnc", &cvnnc, "cvnnc/F");
+
+    CreateBranch("cvnprotons0", &cvnprotons0, "cvnprotons0/F");
+    CreateBranch("cvnprotons1", &cvnprotons1, "cvnprotons1/F");
+    CreateBranch("cvnprotons2", &cvnprotons2, "cvnprotons2/F");
+    CreateBranch("cvnprotonsN", &cvnprotonsN, "cvnprotonsN/F");
+
+    CreateBranch("cvnchgpi0", &cvnchgpi0, "cvnchgpi0/F");
+    CreateBranch("cvnchgpi1", &cvnchgpi1, "cvnchgpi1/F");
+    CreateBranch("cvnchgpi2", &cvnchgpi2, "cvnchgpi2/F");
+    CreateBranch("cvnchgpiN", &cvnchgpiN, "cvnchgpiN/F");
+
+    CreateBranch("cvnpizero0", &cvnpizero0, "cvnpizero0/F");
+    CreateBranch("cvnpizero1", &cvnpizero1, "cvnpizero1/F");
+    CreateBranch("cvnpizero2", &cvnpizero2, "cvnpizero2/F");
+    CreateBranch("cvnpizeroN", &cvnpizeroN, "cvnpizeroN/F");
+
+    CreateBranch("cvnneutron0", &cvnneutron0, "cvnneutron0/F");
+    CreateBranch("cvnneutron1", &cvnneutron1, "cvnneutron1/F");
+    CreateBranch("cvnneutron2", &cvnneutron2, "cvnneutron2/F");
+    CreateBranch("cvnneutronN", &cvnneutronN, "cvnneutronN/F");
+
+  }
+
 
   if (hasClusterInfo()){
     CreateBranch("nclusters",&nclusters,"nclusters/S");
@@ -3520,77 +3620,80 @@ void dune::AnalysisTreeDataStruct::SetAddresses(
 dune::AnalysisTree::AnalysisTree(fhicl::ParameterSet const& pset) :
   EDAnalyzer(pset),
   fTree(nullptr), fPOT(nullptr),
-  fDigitModuleLabel         (pset.get< std::string >("DigitModuleLabel")        ),
-  fHitsModuleLabel          (pset.get< std::string >("HitsModuleLabel")         ),
-  fLArG4ModuleLabel         (pset.get< std::string >("LArGeantModuleLabel")     ),
-  fSimChannelLabel          (pset.get< std::string >("SimChannelLabel")     ),
-  fCalDataModuleLabel       (pset.get< std::string >("CalDataModuleLabel")      ),
-  fGenieGenModuleLabel      (pset.get< std::string >("GenieGenModuleLabel")     ),
-  fCryGenModuleLabel        (pset.get< std::string >("CryGenModuleLabel")       ),
-  fProtoGenModuleLabel      (pset.get< std::string >("ProtoGenModuleLabel")     ),
-  fG4ModuleLabel            (pset.get< std::string >("G4ModuleLabel")           ),
-  fClusterModuleLabel       (pset.get< std::string >("ClusterModuleLabel")     ),
-  fPandoraNuVertexModuleLabel (pset.get< std::string >("PandoraNuVertexModuleLabel")     ),
-  fOpFlashModuleLabel       (pset.get< std::string >("OpFlashModuleLabel")      ),
-  fExternalCounterModuleLabel (pset.get< std::string >("ExternalCounterModuleLabel")      ),
-  fMCShowerModuleLabel      (pset.get< std::string >("MCShowerModuleLabel")     ),
-  fMCTrackModuleLabel      (pset.get< std::string >("MCTrackModuleLabel")     ),
-  fSpacePointSolverModuleLabel (pset.get< std::string >("SpacePointSolverModuleLabel")),
-  fCnnModuleLabel           (pset.get< std::string >("CnnModuleLabel")),
-  fTrackModuleLabel         (pset.get< std::vector<std::string> >("TrackModuleLabel")),
-  fVertexModuleLabel        (pset.get< std::vector<std::string> >("VertexModuleLabel")),
-  fEnergyRecoNueLabel       (pset.get< std::string >("EnergyRecoNueLabel")),
-  fEnergyRecoNumuLabel      (pset.get< std::string >("EnergyRecoNumuLabel")),
-  fEnergyRecoNumuRangeLabel (pset.get< std::string >("EnergyRecoNumuRangeLabel")),
-  fEnergyRecoNumuMCSChi2Label   (pset.get< std::string >("EnergyRecoNumuMCSChi2Label")),
-  fEnergyRecoNumuMCSLLHDLabel   (pset.get< std::string >("EnergyRecoNumuMCSLLHDLabel")),
-  fEnergyRecoNCLabel        (pset.get< std::string >("EnergyRecoNCLabel")),
-  fAngleRecoNueLabel        (pset.get< std::string >("AngleRecoNueLabel")),
-  fAngleRecoNumuLabel        (pset.get< std::string >("AngleRecoNumuLabel")),
-  fAngleRecoNuePFPLabel        (pset.get< std::string >("AngleRecoNuePFPLabel")),
-  fAngleRecoNumuPFPLabel        (pset.get< std::string >("AngleRecoNumuPFPLabel")),
-  fShowerModuleLabel        (pset.get< std::vector<std::string> >("ShowerModuleLabel")),
-  fCalorimetryModuleLabel   (pset.get< std::vector<std::string> >("CalorimetryModuleLabel")),
-  fParticleIDModuleLabel    (pset.get< std::vector<std::string> >("ParticleIDModuleLabel")   ),
-  fMVAPIDShowerModuleLabel  (pset.get< std::vector<std::string> >("MVAPIDShowerModuleLabel")   ),
-  fMVAPIDTrackModuleLabel   (pset.get< std::vector<std::string> >("MVAPIDTrackModuleLabel")   ),
-  fFlashT0FinderLabel       (pset.get< std::vector<std::string> >("FlashT0FinderLabel")   ),
-  fMCT0FinderLabel          (pset.get< std::vector<std::string> >("MCT0FinderLabel")   ),
-  fPOTModuleLabel           (pset.get< std::string >("POTModuleLabel")),
-  fCosmicClusterTaggerAssocLabel (pset.get< std::string >("CosmicClusterTaggerAssocLabel")),
-  fUseBuffer                (pset.get< bool >("UseBuffers", false)),
-  fSaveAuxDetInfo           (pset.get< bool >("SaveAuxDetInfo", false)),
-  fSaveCryInfo              (pset.get< bool >("SaveCryInfo", false)),
-  fSaveGenieInfo	    (pset.get< bool >("SaveGenieInfo", false)),
-  fSaveProtoInfo	    (pset.get< bool >("SaveProtoInfo", false)),
-  fSaveGeantInfo	    (pset.get< bool >("SaveGeantInfo", false)),
-  fSaveGeantPrimaryOnly	(pset.get< bool >("SaveGeantPrimaryOnly", false)),
-  fSaveGeantLeptonOnly	(pset.get< bool >("SaveGeantLeptonOnly", false)),
-  fSaveMCShowerInfo	    (pset.get< bool >("SaveMCShowerInfo", false)),
-  fSaveMCTrackInfo	    (pset.get< bool >("SaveMCTrackInfo", false)),
-  fSaveHitInfo              (pset.get< bool >("SaveHitInfo", false)),
-  fSaveRawDigitInfo                 (pset.get< bool >("SaveRawDigitInfo", false)),
-  fSaveTrackInfo	    (pset.get< bool >("SaveTrackInfo", false)),
-  fSaveVertexInfo	    (pset.get< bool >("SaveVertexInfo", false)),
-  fSaveNuRecoEnergyInfo     (pset.get< bool >("SaveNuRecoEnergyInfo", false)),
-  fSaveNuRecoAngleInfo     (pset.get< bool >("SaveNuRecoAngleInfo", false)),
-  fSaveClusterInfo	    (pset.get< bool >("SaveClusterInfo", false)),
-  fSavePandoraNuVertexInfo        (pset.get< bool >("SavePandoraNuVertexInfo", false)),
-  fSaveFlashInfo            (pset.get< bool >("SaveFlashInfo", false)),
-  fSaveExternCounterInfo            (pset.get< bool >("SaveExternCounterInfo", false)),
-  fSaveShowerInfo            (pset.get< bool >("SaveShowerInfo", false)),
-  fSavePFParticleInfo	    (pset.get< bool >("SavePFParticleInfo", false)),
-  fSaveSpacePointSolverInfo (pset.get< bool >("SaveSpacePointSolverInfo", false)),
-  fSaveCnnInfo              (pset.get< bool >("SaveCnnInfo", false)),
-  fAddGeantFlag             (pset.get< bool > ("AddGeantFlag", false)),
-  fRollUpUnsavedIDs              (pset.get< bool >("RollUpUnsavedIDs", true)),
-  fCosmicTaggerAssocLabel  (pset.get<std::vector< std::string > >("CosmicTaggerAssocLabel") ),
-  fContainmentTaggerAssocLabel  (pset.get<std::vector< std::string > >("ContainmentTaggerAssocLabel") ),
-  fFlashMatchAssocLabel (pset.get<std::vector< std::string > >("FlashMatchAssocLabel") ),
-  bIgnoreMissingShowers     (pset.get< bool >("IgnoreMissingShowers", false)),
+  fDigitModuleLabel                (pset.get< std::string >("DigitModuleLabel")        ),
+  fHitsModuleLabel                 (pset.get< std::string >("HitsModuleLabel")         ),
+  fLArG4ModuleLabel                (pset.get< std::string >("LArGeantModuleLabel")     ),
+  fSimChannelLabel                 (pset.get< std::string >("SimChannelLabel")     ),
+  fCalDataModuleLabel              (pset.get< std::string >("CalDataModuleLabel")      ),
+  fGenieGenModuleLabel             (pset.get< std::string >("GenieGenModuleLabel")     ),
+  fCryGenModuleLabel               (pset.get< std::string >("CryGenModuleLabel")       ),
+  fProtoGenModuleLabel             (pset.get< std::string >("ProtoGenModuleLabel")     ),
+  fG4ModuleLabel                   (pset.get< std::string >("G4ModuleLabel")           ),
+  fClusterModuleLabel              (pset.get< std::string >("ClusterModuleLabel")     ),
+  fPandoraNuVertexModuleLabel      (pset.get< std::string >("PandoraNuVertexModuleLabel")     ),
+  fOpFlashModuleLabel              (pset.get< std::string >("OpFlashModuleLabel")      ),
+  fExternalCounterModuleLabel      (pset.get< std::string >("ExternalCounterModuleLabel")      ),
+  fMCShowerModuleLabel             (pset.get< std::string >("MCShowerModuleLabel")     ),
+  fMCTrackModuleLabel              (pset.get< std::string >("MCTrackModuleLabel")     ),
+  fSpacePointSolverModuleLabel     (pset.get< std::string >("SpacePointSolverModuleLabel")),
+  fCnnModuleLabel                  (pset.get< std::string >("CnnModuleLabel")),
+  fTrackModuleLabel                (pset.get< std::vector<std::string> >("TrackModuleLabel")),
+  fVertexModuleLabel               (pset.get< std::vector<std::string> >("VertexModuleLabel")),
+  fEnergyRecoNueLabel              (pset.get< std::string >("EnergyRecoNueLabel")),
+  fEnergyRecoNumuLabel             (pset.get< std::string >("EnergyRecoNumuLabel")),
+  fEnergyRecoNumuRangeLabel        (pset.get< std::string >("EnergyRecoNumuRangeLabel")),
+  fEnergyRecoNumuMCSChi2Label      (pset.get< std::string >("EnergyRecoNumuMCSChi2Label")),
+  fEnergyRecoNumuMCSLLHDLabel      (pset.get< std::string >("EnergyRecoNumuMCSLLHDLabel")),
+  fEnergyRecoNCLabel               (pset.get< std::string >("EnergyRecoNCLabel")),
+  fAngleRecoNueLabel               (pset.get< std::string >("AngleRecoNueLabel")),
+  fAngleRecoNumuLabel              (pset.get< std::string >("AngleRecoNumuLabel")),
+  fAngleRecoNuePFPLabel            (pset.get< std::string >("AngleRecoNuePFPLabel")),
+  fAngleRecoNumuPFPLabel           (pset.get< std::string >("AngleRecoNumuPFPLabel")),
+  fCVNLabel                        (pset.get<std::string>("CVNLabel")),
+  fShowerModuleLabel               (pset.get< std::vector<std::string> >("ShowerModuleLabel")),
+  fCalorimetryModuleLabel          (pset.get< std::vector<std::string> >("CalorimetryModuleLabel")),
+  fParticleIDModuleLabel           (pset.get< std::vector<std::string> >("ParticleIDModuleLabel")   ),
+  fMVAPIDShowerModuleLabel         (pset.get< std::vector<std::string> >("MVAPIDShowerModuleLabel")   ),
+  fMVAPIDTrackModuleLabel          (pset.get< std::vector<std::string> >("MVAPIDTrackModuleLabel")   ),
+  fFlashT0FinderLabel              (pset.get< std::vector<std::string> >("FlashT0FinderLabel")   ),
+  fMCT0FinderLabel                 (pset.get< std::vector<std::string> >("MCT0FinderLabel")   ),
+  fPOTModuleLabel                  (pset.get< std::string >("POTModuleLabel")),
+  fCosmicClusterTaggerAssocLabel   (pset.get< std::string >("CosmicClusterTaggerAssocLabel")),
+  fUseBuffer                       (pset.get< bool >("UseBuffers", false)),
+  fSaveAuxDetInfo                  (pset.get< bool >("SaveAuxDetInfo", false)),
+  fSaveCryInfo                     (pset.get< bool >("SaveCryInfo", false)),
+  fSaveGenieInfo                   (pset.get< bool >("SaveGenieInfo", false)),
+  fSaveProtoInfo                   (pset.get< bool >("SaveProtoInfo", false)),
+  fSaveGeantInfo                   (pset.get< bool >("SaveGeantInfo", false)),
+  fSaveGeantPrimaryOnly	           (pset.get< bool >("SaveGeantPrimaryOnly", false)),
+  fSaveGeantLeptonOnly	           (pset.get< bool >("SaveGeantLeptonOnly", false)),
+  fSaveMCShowerInfo                (pset.get< bool >("SaveMCShowerInfo", false)),
+  fSaveMCTrackInfo                 (pset.get< bool >("SaveMCTrackInfo", false)),
+  fSaveHitInfo                     (pset.get< bool >("SaveHitInfo", false)),
+  fSaveRawDigitInfo                (pset.get< bool >("SaveRawDigitInfo", false)),
+  fSaveTrackInfo                   (pset.get< bool >("SaveTrackInfo", false)),
+  fSaveVertexInfo                  (pset.get< bool >("SaveVertexInfo", false)),
+  fSaveNuRecoEnergyInfo            (pset.get< bool >("SaveNuRecoEnergyInfo", false)),
+  fSaveNuRecoAngleInfo             (pset.get< bool >("SaveNuRecoAngleInfo", false)),
+  fSaveCVNScoresInfo               (pset.get< bool >("SaveCVNScoresInfo", false)),
+  fIsAtmoCVN                       (pset.get<bool>("IsAtmoCVN")),
+  fSaveClusterInfo                 (pset.get< bool >("SaveClusterInfo", false)),
+  fSavePandoraNuVertexInfo         (pset.get< bool >("SavePandoraNuVertexInfo", false)),
+  fSaveFlashInfo                   (pset.get< bool >("SaveFlashInfo", false)),
+  fSaveExternCounterInfo           (pset.get< bool >("SaveExternCounterInfo", false)),
+  fSaveShowerInfo                  (pset.get< bool >("SaveShowerInfo", false)),
+  fSavePFParticleInfo              (pset.get< bool >("SavePFParticleInfo", false)),
+  fSaveSpacePointSolverInfo        (pset.get< bool >("SaveSpacePointSolverInfo", false)),
+  fSaveCnnInfo                     (pset.get< bool >("SaveCnnInfo", false)),
+  fAddGeantFlag                    (pset.get< bool > ("AddGeantFlag", false)),
+  fRollUpUnsavedIDs                (pset.get< bool >("RollUpUnsavedIDs", true)),
+  fCosmicTaggerAssocLabel          (pset.get<std::vector< std::string > >("CosmicTaggerAssocLabel") ),
+  fContainmentTaggerAssocLabel     (pset.get<std::vector< std::string > >("ContainmentTaggerAssocLabel") ),
+  fFlashMatchAssocLabel            (pset.get<std::vector< std::string > >("FlashMatchAssocLabel") ),
+  bIgnoreMissingShowers            (pset.get< bool >("IgnoreMissingShowers", false)),
   isCosmics(false),
-  fSaveCaloCosmics          (pset.get< bool >("SaveCaloCosmics",false)),
-  fG4minE                   (pset.get< float>("G4minE",0.01))
+  fSaveCaloCosmics                 (pset.get< bool >("SaveCaloCosmics",false)),
+  fG4minE                          (pset.get< float>("G4minE",0.01))
 {
 
   if (fSavePFParticleInfo) fPFParticleModuleLabel = pset.get<std::string>("PFParticleModuleLabel");
@@ -4394,6 +4497,50 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
 
   } // end fSaveNuRecoEnergyInfo
 
+
+  if (fSaveCVNScoresInfo)
+  {
+
+    art::Handle<std::vector<cvn::Result>> cvnin = evt.getHandle<std::vector<cvn::Result>>(fCVNLabel);
+
+    if( !cvnin.failedToGet() && !cvnin->empty()) {
+      if(fIsAtmoCVN){ //Hotfix to take care of the fact that the CVN for atmospherics is storing results in a weird way...
+        const std::vector<std::vector<float>> &scores = (*cvnin)[0].fOutput;
+        fData->cvnnc = scores[0][0];
+        fData->cvnnue = scores[0][1];
+        fData->cvnnumu = scores[0][2];
+      }
+      else{ //Normal code
+        fData->cvnisnubar = (*cvnin)[0].GetIsAntineutrinoProbability();
+        fData->cvnnue = (*cvnin)[0].GetNueProbability();
+        fData->cvnnumu = (*cvnin)[0].GetNumuProbability();
+        fData->cvnnutau = (*cvnin)[0].GetNutauProbability();
+        fData->cvnnc = (*cvnin)[0].GetNCProbability();
+
+        fData->cvnprotons0 = (*cvnin)[0].Get0protonsProbability();
+        fData->cvnprotons1 = (*cvnin)[0].Get1protonsProbability();
+        fData->cvnprotons2 = (*cvnin)[0].Get2protonsProbability();
+        fData->cvnprotonsN = (*cvnin)[0].GetNprotonsProbability();
+
+        fData->cvnchgpi0 = (*cvnin)[0].Get0pionsProbability();
+        fData->cvnchgpi1 = (*cvnin)[0].Get1pionsProbability();
+        fData->cvnchgpi2 = (*cvnin)[0].Get2pionsProbability();
+        fData->cvnchgpiN = (*cvnin)[0].GetNpionsProbability();
+
+        fData->cvnpizero0 = (*cvnin)[0].Get0pizerosProbability();
+        fData->cvnpizero1 = (*cvnin)[0].Get1pizerosProbability();
+        fData->cvnpizero2 = (*cvnin)[0].Get2pizerosProbability();
+        fData->cvnpizeroN = (*cvnin)[0].GetNpizerosProbability();
+
+        fData->cvnneutron0 = (*cvnin)[0].Get0neutronsProbability();
+        fData->cvnneutron1 = (*cvnin)[0].Get1neutronsProbability();
+        fData->cvnneutron2 = (*cvnin)[0].Get2neutronsProbability();
+        fData->cvnneutronN = (*cvnin)[0].GetNneutronsProbability();
+      }
+      
+    }
+  } //end fSaveCVNScoresInfo
+
   if (fSaveClusterInfo){
     fData->nclusters = (int) NClusters;
     if (NClusters > kMaxClusters){
@@ -4573,6 +4720,9 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
     lar_pandora::PFParticlesToShowers pfParticleToShowerMap;
     lar_pandora::LArPandoraHelper::CollectShowers(evt, fShowerModuleLabel[0], allPfParticleShowers, pfParticleToShowerMap);
 
+
+    art::FindManyP<larpandoraobj::PFParticleMetadata> theMetadataAssns(pfparticlelist, evt, fPFParticleModuleLabel);
+
     for (size_t i = 0; i < NPFParticles && i < PFParticleData.GetMaxPFParticles() ; ++i){
       PFParticleData.pfp_selfID[i] = pfparticlelist[i]->Self();
       PFParticleData.pfp_isPrimary[i] = (Short_t)pfparticlelist[i]->IsPrimary();
@@ -4610,6 +4760,17 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
       }
       else
         PFParticleData.pfp_isTrack[i] = 0;
+
+      if (theMetadataAssns.isValid()){
+        if (theMetadataAssns.at(pfparticlelist[i]->Self()).size() > 0)
+        {
+          const larpandoraobj::PFParticleMetadata metaData = *((theMetadataAssns.at(pfparticlelist[i]->Self())).at(0));
+          const std::map<std::string, float> &propMap = metaData.GetPropertiesMap();
+          if(propMap.count("TrackScore") > 0){
+            PFParticleData.pfp_trackScore[i] = propMap.at("TrackScore");
+          }
+        }
+      }
 
       // Set the track ID.
       auto trackMapIter = pfParticleToTrackMap.find(pfparticlelist[i]);

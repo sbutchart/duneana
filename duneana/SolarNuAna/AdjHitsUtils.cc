@@ -25,7 +25,7 @@ namespace solar
     while (NumOriHits != FilledHits)
     {
       if (HeavDebug)
-        std::cerr << "\nStart of my while loop" << std::endl;
+        std::cout << "\nStart of my while loop" << std::endl;
       std::vector<recob::Hit> AdjHitVec;
       AdjHitVec.push_back(MyVec[0]);
       MyVec.erase(MyVec.begin() + 0);
@@ -41,7 +41,7 @@ namespace solar
           {
             if (HeavDebug)
             {
-              std::cerr << "\t\tLooping though AdjVec " << aL << " and  MyVec " << nL
+              std::cout << "\t\tLooping though AdjVec " << aL << " and  MyVec " << nL
                         << " AdjHitVec - " << AdjHitVec[aL].Channel() << " & " << AdjHitVec[aL].PeakTime()
                         << " MVec - " << MyVec[nL].Channel() << " & " << MyVec[nL].PeakTime()
                         << " Channel " << abs((int)AdjHitVec[aL].Channel() - (int)MyVec[nL].Channel()) << " bool " << (bool)(abs((int)AdjHitVec[aL].Channel() - (int)MyVec[nL].Channel()) <= ChanRange)
@@ -54,7 +54,7 @@ namespace solar
             {
 
               if (HeavDebug)
-                std::cerr << "\t\t\tFound a new thing!!!" << std::endl;
+                std::cout << "\t\t\tFound a new thing!!!" << std::endl;
               // --- Check that this element isn't already in AddNow.
               bool AlreadyPres = false;
 
@@ -67,8 +67,8 @@ namespace solar
               if (!AlreadyPres)
                 AddNow.push_back(nL);
             } // If this TPCHit is within the window around one of my other hits.
-          }   // Loop through my vector of colleciton plane hits.
-        }     // Loop through AdjHitVec
+          } // Loop through my vector of colleciton plane hits.
+        } // Loop through AdjHitVec
 
         // --- Now loop through AddNow and remove from Marley whilst adding to AdjHitVec
         std::sort(AddNow.begin(), AddNow.end());
@@ -76,21 +76,21 @@ namespace solar
         {
           if (HeavDebug)
           {
-            std::cerr << "\tRemoving element " << AddNow.size() - 1 - aa << " from MyVec ===> "
+            std::cout << "\tRemoving element " << AddNow.size() - 1 - aa << " from MyVec ===> "
                       << MyVec[AddNow[AddNow.size() - 1 - aa]].Channel() << " & " << MyVec[AddNow[AddNow.size() - 1 - aa]].PeakTime()
                       << std::endl;
           }
 
           AdjHitVec.push_back(MyVec[AddNow[AddNow.size() - 1 - aa]]);
           MyVec.erase(MyVec.begin() + AddNow[AddNow.size() - 1 - aa]); // This line creates segmentation fault
-                                                                      // std::cout << "Erase works" << std::endl;
+                                                                       // std::cout << "Erase works" << std::endl;
         }
 
         LastSize = NewSize;
         NewSize = AdjHitVec.size();
         if (HeavDebug)
         {
-          std::cerr << "\t---After that pass, AddNow was size " << AddNow.size() << " ==> LastSize is " << LastSize << ", and NewSize is " << NewSize
+          std::cout << "\t---After that pass, AddNow was size " << AddNow.size() << " ==> LastSize is " << LastSize << ", and NewSize is " << NewSize
                     << "\nLets see what is in AdjHitVec...." << std::endl;
           for (size_t aL = 0; aL < AdjHitVec.size(); ++aL)
           {
@@ -105,7 +105,7 @@ namespace solar
         SummedADCInt += TPCHit.Integral();
 
       if (HeavDebug)
-        std::cerr << "After that loop, I had " << NumAdjColHits << " adjacent collection plane hits." << std::endl;
+        std::cout << "After that loop, I had " << NumAdjColHits << " adjacent collection plane hits." << std::endl;
 
       MyHist->Fill(NumAdjColHits);
       ADCIntHist->Fill(SummedADCInt);
@@ -133,8 +133,11 @@ namespace solar
           channel += TPCHit.Integral() * TPCHit.Channel();
           adcInt += TPCHit.Integral();
         }
-        tick /= adcInt;
-        channel /= adcInt;
+        if (adcInt != 0)
+        {
+          tick /= adcInt;
+          channel /= adcInt;
+        }
         summedADCInt.push_back(adcInt);
         avgTick.push_back(tick);
         avgChannel.push_back(channel);

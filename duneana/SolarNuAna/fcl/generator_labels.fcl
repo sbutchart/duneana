@@ -62,7 +62,7 @@ BEGIN_PROLOG
     #K40GenInAPAboards,
     #U238ChainGenInAPAboards,
     #Th232ChainGenInAPAboards,
-    "U238Th232K40GenInLArAPAboards",
+    "U238Th232K40GenInLArAPAboards1x2x6",
     # PDS
     "Rn222ChainGenInPDS",
     # Externals

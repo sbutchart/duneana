@@ -2,55 +2,47 @@ add_subdirectory(fcl)
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 art_make(BASENAME_ONLY
     LIB_LIBRARIES
-      cetlib_except::cetlib_except
+      ${ROOT_CORE}
+      ${ROOT_EVE}
       cetlib::cetlib
-      lardata::RecoObjects 
       lardata::Utilities
       lardataobj::RawData
       larcorealg::Geometry
-      lardata::ArtDataHelper
       larcore::Geometry_Geometry_service
       messagefacility::MF_MessageLogger
-      art::Persistency_Common
       art::Persistency_Provenance
+      art::Persistency_Common
       art::Utilities 
-      canvas::canvas
-      art::Persistency_Common
-      art::Persistency_Provenance
-      art::Utilities
+      lardataobj::RecoBase
+      art_root_io::tfile_support
     SERVICE_LIBRARIES
-      duneana::SolarNuAna
+      duneana_SolarNuAna
+      lardata::Utilities
+      lardataobj::RecoBase
+      ${ART_ROOT_IO_ROOTINPUT_SOURCE}
     MODULE_LIBRARIES
-      dunecore::DAQTriggerSim_TriggerDataProducts
-      larcore::Geometry_Geometry_service
+      dunecore::DuneObj
       lardata::RecoObjects
       lardata::Utilities
-      lardata::ArtDataHelper
-      lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
       larcorealg::Geometry
       lardataobj::RawData
       lardataobj::RecoBase
-      dunecore::DuneObj
+      larcore::Geometry_Geometry_service
+      dunecore::DAQTriggerSim_TriggerDataProducts
       larsim::MCCheater_BackTrackerService_service
+      lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
       larsim::MCCheater_PhotonBackTrackerService_service
       larsim::MCCheater_ParticleInventoryService_service
       nug4::ParticleNavigation
       nusimdata::SimulationBase
-      art::Framework_Core
-      art::Framework_Principal
-      art::Framework_Services_Registry
       art_root_io::tfile_support
-      ROOT::Core
-      art_root_io::TFileService_service
       art::Persistency_Common
       art::Persistency_Provenance
       art::Utilities 
-      canvas::canvas
       messagefacility::MF_MessageLogger
       cetlib::cetlib 
-      cetlib_except::cetlib_except
-      duneana::SolarNuAna
-      ROOT::Tree
+      duneana_SolarNuAna
+      ROOT::Core ROOT::Hist ROOT::Tree
 )
 
 install_headers()

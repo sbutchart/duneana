@@ -15,13 +15,13 @@
 #include <vector>
 #include <fcntl.h>
 
+#include "fhiclcpp/ParameterSet.h"
+#include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataobj/RecoBase/Hit.h"
-#include "lardataobj/RecoBase/OpHit.h"
-#include "lardataobj/RecoBase/OpFlash.h"
+#include "lardata/Utilities/AssociationUtil.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "larcore/Geometry/Geometry.h"
-#include "fhiclcpp/ParameterSet.h"
+
 
 #include "TH1I.h"
 #include "TH1F.h"

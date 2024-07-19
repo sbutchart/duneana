@@ -1423,6 +1423,7 @@ namespace dune {
     bool fSaveCaloCosmics; ///< save calorimetry information for cosmics
     float fG4minE;         ///< Energy threshold to save g4 particle info
 
+
     double ActiveBounds[6]; // Cryostat boundaries ( neg x, pos x, neg y, pos y, neg z, pos z )
 
     /// Returns the number of trackers configured
@@ -4760,10 +4761,15 @@ void dune::AnalysisTree::analyze(const art::Event& evt)
       else
         PFParticleData.pfp_isTrack[i] = 0;
 
-      const larpandoraobj::PFParticleMetadata metaData = *((theMetadataAssns.at(pfparticlelist[i]->Self())).at(0));
-      const std::map<std::string, float> &propMap = metaData.GetPropertiesMap();
-      if(propMap.count("TrackScore") > 0){
-        PFParticleData.pfp_trackScore[i] = propMap.at("TrackScore");
+      if (theMetadataAssns.isValid()){
+        if (theMetadataAssns.at(pfparticlelist[i]->Self()).size() > 0)
+        {
+          const larpandoraobj::PFParticleMetadata metaData = *((theMetadataAssns.at(pfparticlelist[i]->Self())).at(0));
+          const std::map<std::string, float> &propMap = metaData.GetPropertiesMap();
+          if(propMap.count("TrackScore") > 0){
+            PFParticleData.pfp_trackScore[i] = propMap.at("TrackScore");
+          }
+        }
       }
 
       // Set the track ID.

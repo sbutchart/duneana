@@ -1,0 +1,45 @@
+// ========================================================================================
+// SolarAuxUtils.h
+// This library is an auxiliary library for the SolarNuAna module.
+// It contains utility functions that are used in the SolarNuAna module.
+//
+// @authors     : Sergio Manthey Corchado
+// @created     : Jul, 2024
+//=========================================================================================
+
+#ifndef SolarAuxTool_h
+#define SolarAuxTool_h
+
+#include <cmath>
+#include <iostream>
+#include <vector>
+#include <fcntl.h>
+#include <iomanip>
+#include <limits>
+
+#include "messagefacility/MessageLogger/MessageLogger.h"
+#include "fhiclcpp/ParameterSet.h"
+
+namespace solar
+{
+    class SolarAuxUtils
+    {
+    public:
+        explicit SolarAuxUtils(fhicl::ParameterSet const &p);
+        void PrintInColor(std::string MyString, int Color, std::string Type = "Info");
+        static int GetColor(std::string ColorName);
+        static std::string str(int MyInt);
+        static std::string str(float MyFloat, int MyPrecision = 2);
+        static std::string str(double MyDouble, int MyPrecision = 2);
+        static std::string str(std::vector<int> MyVec);
+        static std::string str(std::vector<float> MyVec, int MyPrecision = 2);
+        static std::string str(std::vector<double> MyVec, int MyPrecision = 2);
+        static int supress_stdout();
+        static void resume_stdout(int fd);
+
+    private:
+        // From fhicl configuration
+    };
+
+}
+#endif

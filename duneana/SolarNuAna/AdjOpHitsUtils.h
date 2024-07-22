@@ -1,7 +1,6 @@
 // ========================================================================================
 // AdjOpHits.h
-// This library is based on Michael Baird's DAQSimAna_module.
-// It is used to find adjacent hits in time and space to create clusters in the context of
+// It is used to find adjacent ophits in time and space to create flashes in the context of
 // the SolarNuAna module and DUNE's solar neutrino analysis.
 // 
 // @authors     : Sergio Manthey Corchado

@@ -26,7 +26,7 @@ namespace solar
     {
     public:
         explicit SolarAuxUtils(fhicl::ParameterSet const &p);
-        void PrintInColor(std::string MyString, int Color, std::string Type = "Info");
+        static void PrintInColor(std::string MyString, int Color, std::string Type = "Info");
         static int GetColor(std::string ColorName);
         static std::string str(int MyInt);
         static std::string str(float MyFloat, int MyPrecision = 2);

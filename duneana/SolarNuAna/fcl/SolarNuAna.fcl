@@ -38,7 +38,7 @@ BEGIN_PROLOG
     MinClusterCharge:           0.           # Min Charge for adj. clusters in [ADCxTick].
     AdjClusterRad:              100.         # Radius to search for adj. clusters in [cm] units.
 
-    GenerateAdjOpFlash:         true         # Generate OpFlashes.
+    GenerateAdjOpFlash:         false         # Generate OpFlashes.
     OpFlashAlgoTime:            5            # Time window to look for adj. OpHits in [tick] units.
     OpFlashAlgoRad:             300          # Distance to look for adj. OpHits in [cm] units.
     OpFlashAlgoPE:              1.5          # PE threshold to look for adj. OpHits.

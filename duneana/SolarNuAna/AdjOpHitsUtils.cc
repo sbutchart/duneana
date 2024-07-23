@@ -1,4 +1,5 @@
 #include "AdjOpHitsUtils.h"
+#include "SolarAuxUtils.h"
 
 namespace solar
 {
@@ -132,27 +133,23 @@ namespace solar
     }
 
     // Sort hits according to time
+    std::string info = "";
     std::sort(MyVec.begin(), MyVec.end(), [](art::Ptr<recob::OpHit> a, art::Ptr<recob::OpHit> b)
               { return a->PeakTime() < b->PeakTime(); });
-    if (HeavDebug)
-      std::cout << "Selected ophits " << MyVec.size() << " from " << Vec.size() << std::endl;
 
-    // Pre-calculate OpDet center coordinates
-    std::unordered_map<int, TVector3> opDetCenters;
-    for (const auto &hit : MyVec)
+    if (HeavDebug)
     {
-      int opChannel = hit->OpChannel();
-      if (opDetCenters.find(opChannel) == opDetCenters.end())
-      {
-        auto opDetXYZ = geo->OpDetGeoFromOpChannel(opChannel).GetCenter();
-        opDetCenters[opChannel] = TVector3(opDetXYZ.X(), opDetXYZ.Y(), opDetXYZ.Z());
-      }
+      info += "Selected ophits " + std::to_string(MyVec.size()) + " from " + std::to_string(Vec.size()) + "\n";
     }
+
     // Create a vector of bools to track if a hit has been clustered or not
     std::vector<bool> ClusteredHits(MyVec.size(), false);
     // Don't need cluster all the hits, only those with PE > MinPE that are close to a big hit
+
+    SolarAuxUtils::PrintInColor(info, SolarAuxUtils::GetColor("yellow"), "Info");
     for (auto it = MyVec.begin(); it != MyVec.end(); ++it)
     {
+      std::string debug = "";
       const auto &hit = *it;
       if (hit->PE() < TriggerPE)
       {
@@ -163,7 +160,8 @@ namespace solar
       std::vector<art::Ptr<recob::OpHit>> AdjHitVec = {};
       AdjHitVec.push_back(hit);
       if (HeavDebug)
-        std::cout << "Trigger hit found: CH " << hit->OpChannel() << " Time " << hit->PeakTime() << std::endl;
+        // std::cout << "Trigger hit found: CH " << hit->OpChannel() << " Time " << hit->PeakTime() << std::endl;
+        debug += "Trigger hit found: CH " + std::to_string(hit->OpChannel()) + " Time " + std::to_string(hit->PeakTime()) + "\n";
 
       // Make use of the fact that the hits are sorted in time to only consider the hits that are adjacent in the vector up to a certain time range
       for (auto it2 = it + 1; it2 != MyVec.end(); ++it2)
@@ -173,32 +171,44 @@ namespace solar
           break;
         auto &adjHit = *it2; // Update adjHit here
 
+        // if (adjHit == nullptr) // Add null pointer check
+        //   continue;
+
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > TimeRange)
           break;
         // If sign of x is the same, then the two hits are in the same drift volume and can be clustered, else skip
-        if (opDetCenters[hit->OpChannel()].X() * opDetCenters[adjHit->OpChannel()].X() < 0)
+        auto ref1 = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
+        auto ref2 = geo->OpDetGeoFromOpChannel(adjHit->OpChannel()).GetCenter();
+        float ref3 = ref1.X() * ref2.X();
+        if (ref3 < 0)
           continue;
         // If hit has already been clustered, skip
         if (ClusteredHits[std::distance(MyVec.begin(), it2)])
           continue;
-        if ((opDetCenters[hit->OpChannel()] - opDetCenters[adjHit->OpChannel()]).Mag() < RadRange)
+
+        auto ref4 = TVector3(ref1.X(), ref1.Y(), ref1.Z()) - TVector3(ref2.X(), ref2.Y(), ref2.Z());
+        if (ref4.Mag() < RadRange)
         {
           if (adjHit->PE() > hit->PE())
           {
             if (HeavDebug)
-              std::cout << "Hit with PE > TriggerPE found: CH " << adjHit->OpChannel() << " Time " << adjHit->PeakTime() << std::endl;
+              // std::cout << "Hit with PE > TriggerPE found: CH " << adjHit->OpChannel() << " Time " << adjHit->PeakTime() << std::endl;
+              debug += "Hit with PE > TriggerPE found: CH " + std::to_string(adjHit->OpChannel()) + " Time " + std::to_string(adjHit->PeakTime()) + "\n";
+
             main_hit = false;
             // Reset the ClusteredHits values for the hits that have been added to the cluster
             for (auto it3 = AdjHitVec.begin(); it3 != AdjHitVec.end(); ++it3)
             {
               if (HeavDebug)
-                std::cout << "Removing hit: CH " << (*it3)->OpChannel() << " Time " << (*it3)->PeakTime() << std::endl;
+                // std::cout << "Removing hit: CH " << (*it3)->OpChannel() << " Time " << (*it3)->PeakTime() << std::endl;
+                debug += "Removing hit: CH " + std::to_string((*it3)->OpChannel()) + " Time " + std::to_string((*it3)->PeakTime()) + "\n";
               ClusteredHits[std::distance(MyVec.begin(), it3)] = false;
             }
             break;
           }
           if (HeavDebug)
-            std::cout << "Adding hit: CH " << adjHit->OpChannel() << " Time " << adjHit->PeakTime() << std::endl;
+            // std::cout << "Adding hit: CH " << adjHit->OpChannel() << " Time " << adjHit->PeakTime() << std::endl;
+            debug += "Adding hit: CH " + std::to_string(adjHit->OpChannel()) + " Time " + std::to_string(adjHit->PeakTime()) + "\n";
           AdjHitVec.push_back(adjHit);
           ClusteredHits[std::distance(MyVec.begin(), it2)] = true;
         }
@@ -213,22 +223,31 @@ namespace solar
 
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > TimeRange)
           break;
-        if (opDetCenters[hit->OpChannel()].X() * opDetCenters[adjHit->OpChannel()].X() < 0)
+
+        auto ref1 = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
+        auto ref2 = geo->OpDetGeoFromOpChannel(adjHit->OpChannel()).GetCenter();
+        float ref3 = ref1.X() * ref2.X();
+        if (ref3 < 0)
           continue;
         // if hit has already been clustered, skip
         if (ClusteredHits[std::distance(MyVec.begin(), it3)])
           continue;
-        if ((opDetCenters[hit->OpChannel()] - opDetCenters[adjHit->OpChannel()]).Mag() < RadRange)
+
+        auto ref4 = TVector3(ref1.X(), ref1.Y(), ref1.Z()) - TVector3(ref2.X(), ref2.Y(), ref2.Z());
+        if (ref4.Mag() < RadRange)
         {
           if (adjHit->PE() > hit->PE())
           {
             if (HeavDebug)
-              std::cout << "Hit with PE > TriggerPE found: CH " << adjHit->OpChannel() << " Time " << adjHit->PeakTime() << std::endl;
+            {
+              debug += "Hit with PE > TriggerPE found: CH " + std::to_string(adjHit->OpChannel()) + " Time " + std::to_string(adjHit->PeakTime()) + "\n";
+            }
             main_hit = false;
             for (auto it4 = AdjHitVec.begin(); it4 != AdjHitVec.end(); ++it4)
             {
               if (HeavDebug)
-                std::cout << "Removing hit: CH " << (*it4)->OpChannel() << " Time " << (*it4)->PeakTime() << std::endl;
+                // std::cout << "Removing hit: CH " << (*it4)->OpChannel() << " Time " << (*it4)->PeakTime() << std::endl;
+                debug += "Removing hit: CH " + std::to_string((*it4)->OpChannel()) + " Time " + std::to_string((*it4)->PeakTime()) + "\n";
               ClusteredHits[std::distance(MyVec.begin(), it4)] = false;
             }
             break;
@@ -236,7 +255,8 @@ namespace solar
           AdjHitVec.push_back(adjHit);
           ClusteredHits[std::distance(MyVec.begin(), it3)] = true;
           if (HeavDebug)
-            std::cout << "Adding hit: CH " << adjHit->OpChannel() << " Time " << adjHit->PeakTime() << std::endl;
+            // std::cout << "Adding hit: CH " << adjHit->OpChannel() << " Time " << adjHit->PeakTime() << std::endl;
+            debug += "Adding hit: CH " + std::to_string(adjHit->OpChannel()) + " Time " + std::to_string(adjHit->PeakTime()) + "\n";
         }
       }
 
@@ -244,8 +264,18 @@ namespace solar
       {
         Clusters.push_back(std::move(AdjHitVec));
         if (HeavDebug)
-          std::cout << "Cluster size: " << Clusters.back().size() << "\n"
-                    << std::endl;
+        {
+          // std::cout << "Cluster size: " << Clusters.back().size() << "\n"<< std::endl;
+          debug += "Cluster size: " + std::to_string(Clusters.back().size()) + "\n";
+          SolarAuxUtils::PrintInColor(debug, SolarAuxUtils::GetColor("green"), "Info");
+        }
+      }
+      else
+      {
+        if (HeavDebug)
+        {
+          SolarAuxUtils::PrintInColor(debug, SolarAuxUtils::GetColor("red"), "Info");
+        }
       }
     }
     return;

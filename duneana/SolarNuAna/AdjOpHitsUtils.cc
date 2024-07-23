@@ -70,11 +70,11 @@ namespace solar
       Y = YSum / HotPE;
       Z = ZSum / HotPE;
 
-      // Alternatively compute the centroid of the flash in 3D space.
-      if (fOpFlashAlgoCentroid)
-      {
-        CalcCentroid(ClusterCopy, X, Y, Z);
-      }
+      // Alternatively compute the centroid of the flash in 3D space. NEEDS TO BE IMPLEMENTED!
+      // if (fOpFlashAlgoCentroid)
+      // {
+      //   CalcCentroid(ClusterCopy, X, Y, Z);
+      // }
 
       // Compute the flash width and STD from divergence of 1/r² signal decay.
       std::vector<float> varYZ = {};
@@ -436,82 +436,22 @@ namespace solar
     return;
   }
 
-  // Function to calculate the Gaussian probability density function
-  double AdjOpHitsUtils::GaussianPDF(double x, double mean, double sigma)
-  {
-    return exp(-0.5 * pow((x - mean) / sigma, 2)) / (sqrt(2 * M_PI) * sigma);
-  }
-
-  void AdjOpHitsUtils::CalcCentroid(std::vector<art::Ptr<recob::OpHit>> Hits, double &x, double &y, double &z)
-  {
-    const double sigma = fOpFlashAlgoRad; // Gaussian sigma (range in cm)
-
-    // Initialize variables
-    double maxLikelihood = 0.0;
-    double bestY = 0.0;
-    double bestZ = 0.0;
-
-    // Loop over possible x positions
-    double firstHitX = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().X();
-    double firstHitY = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().Y();
-    double firstHitZ = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().Z();
-
-    for (double yPos = firstHitY - fOpFlashAlgoRad; yPos <= firstHitY + fOpFlashAlgoRad; yPos += 5)
-    {
-      for (double zPos = firstHitZ - fOpFlashAlgoRad; zPos <= firstHitZ + fOpFlashAlgoRad; zPos += 5)
-      {
-        // Skipt the yPos and zPos that are outside the circle of radius sigma around the first hit
-        if (pow(yPos - firstHitY, 2) + pow(zPos - firstHitZ, 2) > pow(sigma, 2))
-          continue;
-        double likelihood = 0.0;
-        double sumY = 0.0;
-        double sumZ = 0.0;
-        int count = 0;
-
-        // Loop over hits
-        for (const auto &hit : Hits)
-        {
-          double hitYPos = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter().Y();
-          double hitZPos = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter().Z();
-
-          // Calculate the likelihood for the hit
-          double hitLikelihood = GaussianPDF(hitYPos, yPos, sigma) * GaussianPDF(hitZPos, zPos, sigma);
-
-          // Accumulate the likelihood and calculate the weighted sum of Y and Z coordinates
-          likelihood += log(hitLikelihood);
-          sumY += hitLikelihood * hitYPos;
-          sumZ += hitLikelihood * hitZPos;
-          count++;
-        }
-
-        // Check if the current likelihood is the maximum
-        if (likelihood > maxLikelihood)
-        {
-          maxLikelihood = likelihood;
-          bestY = sumY / count;
-          bestZ = sumZ / count;
-        }
-      }
-    }
-
-    // Set the best 3D spacepoint
-    x = firstHitX;
-    y = bestY;
-    z = bestZ;
-  }
-
-  double AdjOpHitsUtils::FlashMatchResidual(std::vector<art::Ptr<recob::OpHit>> Hits, double &x, double &y, double &z)
+  void AdjOpHitsUtils::FlashMatchResidual(float res, std::vector<art::Ptr<recob::OpHit>> Hits, double x, double y, double z)
   {
     // Initialize variables
-    double residuals = 0;
+    res = 0;
 
     // Start with the first hit in the flash as reference point
     double firstHitY = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().Y();
     double firstHitZ = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().Z();
-    // Get the first hit PE
-    double firstHitPE = Hits[0]->PE();
-    double distSq = pow(firstHitY - y, 2) + pow(firstHitZ - z, 2);
-    double refHitPE = firstHitPE / (pow(x, 2) / (pow(x, 2) + distSq));
+
+    // Get the first hit PE and calculate the squared distance and angle to the reference point
+    float firstHitPE = Hits[0]->PE();
+    float firstHitDistSq = pow(firstHitY - y, 2) + pow(firstHitZ - z, 2);
+    float firstHitAngle = atan2(sqrt(firstHitDistSq), x);
+
+    // Calculate the expected PE value for the reference point based on the first hit PE and the squared distance + angle
+    float refHitPE = firstHitPE / (pow(x, 2) / (pow(x, 2) + firstHitDistSq)) / cos(firstHitAngle);
 
     // Loop over all OpHits in the flash and compute the squared distance to the reference point
     for (const auto &hit : Hits)
@@ -519,13 +459,79 @@ namespace solar
       double hitY = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter().Y();
       double hitZ = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter().Z();
       // Make a residual calculation of the PE distribution in the OpHits of the flash wrt the charge deposition in the TPC.
-      distSq = pow(hitY - y, 2) + pow(hitZ - z, 2);
-      // The expected distribution of PE corresponds to a decrease of 1/r² with the distance from the flash center. Between adjacent OpHits, the expected decrease in charge has the form r²/(r²+d²)
-      double expectedPE = refHitPE * pow(x, 2) / (pow(x, 2) + distSq);
-      residuals += pow(hit->PE() - expectedPE, 2);
-    }
+      float hitDistSq = pow(hitY - y, 2) + pow(hitZ - z, 2);
+      float hitAngle = atan2(sqrt(hitDistSq), x);
 
-    residuals /= Hits.size();
-    return residuals;
+      // The expected distribution of PE corresponds to a decrease of 1/r² with the distance from the flash center. Between adjacent OpHits, the expected decrease in charge has the form r²/(r²+d²)
+      float predPE = refHitPE * pow(x, 2) / (pow(x, 2) + hitDistSq) / cos(hitAngle);
+      res += pow(hit->PE() - predPE, 2);
+    }
+    if (Hits.size() > 0)
+      res /= Hits.size();
   }
+
+  // Function to calculate the Gaussian probability density function
+  // double AdjOpHitsUtils::GaussianPDF(double x, double mean, double sigma)
+  // {
+  //   return exp(-0.5 * pow((x - mean) / sigma, 2)) / (sqrt(2 * M_PI) * sigma);
+  // }
+
+  // void AdjOpHitsUtils::CalcCentroid(std::vector<art::Ptr<recob::OpHit>> Hits, double x, double y, double z)
+  // {
+  //   const double sigma = fOpFlashAlgoRad; // Gaussian sigma (range in cm)
+
+  //   // Initialize variables
+  //   double maxLikelihood = 0.0;
+  //   double bestY = 0.0;
+  //   double bestZ = 0.0;
+
+  //   // Loop over possible x positions
+  //   double firstHitX = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().X();
+  //   double firstHitY = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().Y();
+  //   double firstHitZ = geo->OpDetGeoFromOpChannel(Hits[0]->OpChannel()).GetCenter().Z();
+
+  //   for (double yPos = firstHitY - fOpFlashAlgoRad; yPos <= firstHitY + fOpFlashAlgoRad; yPos += 5)
+  //   {
+  //     for (double zPos = firstHitZ - fOpFlashAlgoRad; zPos <= firstHitZ + fOpFlashAlgoRad; zPos += 5)
+  //     {
+  //       // Skipt the yPos and zPos that are outside the circle of radius sigma around the first hit
+  //       if (pow(yPos - firstHitY, 2) + pow(zPos - firstHitZ, 2) > pow(sigma, 2))
+  //         continue;
+  //       double likelihood = 0.0;
+  //       double sumY = 0.0;
+  //       double sumZ = 0.0;
+  //       int count = 0;
+
+  //       // Loop over hits
+  //       for (const auto &hit : Hits)
+  //       {
+  //         double hitYPos = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter().Y();
+  //         double hitZPos = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter().Z();
+
+  //         // Calculate the likelihood for the hit
+  //         double hitLikelihood = GaussianPDF(hitYPos, yPos, sigma) * GaussianPDF(hitZPos, zPos, sigma);
+
+  //         // Accumulate the likelihood and calculate the weighted sum of Y and Z coordinates
+  //         likelihood += log(hitLikelihood);
+  //         sumY += hitLikelihood * hitYPos;
+  //         sumZ += hitLikelihood * hitZPos;
+  //         count++;
+  //       }
+
+  //       // Check if the current likelihood is the maximum
+  //       if (likelihood > maxLikelihood)
+  //       {
+  //         maxLikelihood = likelihood;
+  //         bestY = sumY / count;
+  //         bestZ = sumZ / count;
+  //       }
+  //     }
+  //   }
+
+  //   // Set the best 3D spacepoint
+  //   x = firstHitX;
+  //   y = bestY;
+  //   z = bestZ;
+  // }
+
 } // namespace solar

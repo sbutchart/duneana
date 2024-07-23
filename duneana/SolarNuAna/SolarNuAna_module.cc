@@ -104,7 +104,7 @@ namespace solar
     std::vector<float> MAdjClTime, MAdjClCharge, MAdjClInd0Charge, MAdjClInd1Charge, MAdjClMaxCharge, MAdjClInd0MaxCharge, MAdjClInd1MaxCharge;
     std::vector<float> MAdjClNHit, MAdjClInd0NHit, MAdjClInd1NHit, MAdjClRecoY, MAdjClRecoZ, MAdjClR, MAdjClPur, MAdjClMainE, MAdjClMainK;
     std::vector<float> MAdjClMainX, MAdjClMainY, MAdjClMainZ, MAdjClEndX, MAdjClEndY, MAdjClEndZ, MMarleyFrac, MGenFrac;
-    std::vector<float> MAdjFlashTime, MAdjFlashPE, MAdjFlashNHit, MAdjFlashMaxPE, MAdjFlashRecoX, MAdjFlashRecoY, MAdjFlashRecoZ, MAdjFlashR, MAdjFlashPur, MAdjFlashSTD, MAdjFlashFast;
+    std::vector<float> MAdjFlashTime, MAdjFlashResidual, MAdjFlashPE, MAdjFlashNHit, MAdjFlashMaxPE, MAdjFlashRecoX, MAdjFlashRecoY, MAdjFlashRecoZ, MAdjFlashR, MAdjFlashPur, MAdjFlashSTD, MAdjFlashFast;
     std::vector<float> MarleyEList, MarleyPList, MarleyKList, MarleyTList, MarleyEndXList, MarleyEndYList, MarleyEndZList, MarleyMaxEDepList, MarleyMaxEDepXList, MarleyMaxEDepYList, MarleyMaxEDepZList;
     std::vector<double> MTrackStart, MTrackEnd;
     std::vector<double> MMainVertex, MEndVertex, MMainParentVertex;
@@ -380,17 +380,18 @@ namespace solar
     fSolarNuAnaTree->Branch("AdjClEndZ", &MAdjClEndZ);                   // Adj. clusters' end Z [cm]
 
     // Adj. Flash info.
-    fSolarNuAnaTree->Branch("AdjOpFlashTime", &MAdjFlashTime);   // Adj. flash' time [ticks]
-    fSolarNuAnaTree->Branch("AdjOpFlashPE", &MAdjFlashPE);       // Adj. flash' tot #PE [ADC*ticks]
-    fSolarNuAnaTree->Branch("AdjOpFlashNHit", &MAdjFlashNHit);   // Adj. flash' #hits
-    fSolarNuAnaTree->Branch("AdjOpFlashMaxPE", &MAdjFlashMaxPE); // Adj. flash' max #PE [ADC*ticks]
-    fSolarNuAnaTree->Branch("AdjOpFlashSTD", &MAdjFlashSTD);     // Adj. flash' STD
-    fSolarNuAnaTree->Branch("AdjOpFlashFast", &MAdjFlashFast);   // Adj. flash' Fast Component
-    fSolarNuAnaTree->Branch("AdjOpFlashRecoY", &MAdjFlashRecoX); // Adj. flash' reco X [cm]
-    fSolarNuAnaTree->Branch("AdjOpFlashRecoY", &MAdjFlashRecoY); // Adj. flash' reco Y [cm]
-    fSolarNuAnaTree->Branch("AdjOpFlashRecoZ", &MAdjFlashRecoZ); // Adj. flash' reco Z [cm]
-    fSolarNuAnaTree->Branch("AdjOpFlashPur", &MAdjFlashPur);     // Adj. flash' purity
-    fSolarNuAnaTree->Branch("AdjOpFlashR", &MAdjFlashR);         // Adj. flash' reco distance [cm]
+    fSolarNuAnaTree->Branch("AdjOpFlashTime", &MAdjFlashTime);         // Adj. flash' time [ticks]
+    fSolarNuAnaTree->Branch("AdjOpFlashResidual", &MAdjFlashResidual); // Adj. flash' residual wrt. cluster
+    fSolarNuAnaTree->Branch("AdjOpFlashPE", &MAdjFlashPE);             // Adj. flash' tot #PE [ADC*ticks]
+    fSolarNuAnaTree->Branch("AdjOpFlashNHit", &MAdjFlashNHit);         // Adj. flash' #hits
+    fSolarNuAnaTree->Branch("AdjOpFlashMaxPE", &MAdjFlashMaxPE);       // Adj. flash' max #PE [ADC*ticks]
+    fSolarNuAnaTree->Branch("AdjOpFlashSTD", &MAdjFlashSTD);           // Adj. flash' STD
+    fSolarNuAnaTree->Branch("AdjOpFlashFast", &MAdjFlashFast);         // Adj. flash' Fast Component
+    fSolarNuAnaTree->Branch("AdjOpFlashRecoY", &MAdjFlashRecoX);       // Adj. flash' reco X [cm]
+    fSolarNuAnaTree->Branch("AdjOpFlashRecoY", &MAdjFlashRecoY);       // Adj. flash' reco Y [cm]
+    fSolarNuAnaTree->Branch("AdjOpFlashRecoZ", &MAdjFlashRecoZ);       // Adj. flash' reco Z [cm]
+    fSolarNuAnaTree->Branch("AdjOpFlashPur", &MAdjFlashPur);           // Adj. flash' purity
+    fSolarNuAnaTree->Branch("AdjOpFlashR", &MAdjFlashR);               // Adj. flash' reco distance [cm]
 
     fConfigTree->AddFriend(fSolarNuAnaTree);
     fMCTruthTree->AddFriend(fSolarNuAnaTree);
@@ -616,8 +617,9 @@ namespace solar
     //---------------------------------------------------------------------------------------------------------------------------------------------------------------//
     // Find OpHits and OpFlashes associated with the event
     std::string sOpFlashTruth = "";
-    art::Handle<std::vector<recob::OpHit>> OpHitHandle;
     std::vector<art::Ptr<recob::OpHit>> OpHitList;
+    art::Handle<std::vector<recob::OpHit>> OpHitHandle;
+    std::vector<std::vector<art::Ptr<recob::OpHit>>> OpHitVec;
     if (evt.getByLabel(fOpHitLabel, OpHitHandle))
     {
       art::fill_ptr_vector(OpHitList, OpHitHandle);
@@ -626,7 +628,6 @@ namespace solar
     if (fGenerateAdjOpFlash)
     {
       std::vector<AdjOpHitsUtils::FlashInfo> FlashVec;
-      std::vector<std::vector<art::Ptr<recob::OpHit>>> OpHitVec;
       adjophits->CalcAdjOpHitsFast(OpHitList, OpHitVec, fOpFlashAlgoDebug);
       adjophits->MakeFlashVector(FlashVec, OpHitVec, evt);
       OpFlashNum = int(FlashVec.size());
@@ -717,6 +718,7 @@ namespace solar
         mf::LogDebug("SolarNuAna") << "Assigning OpHit to Flash";
         double FlashStdDev = 0.0, varY = 0.0, varZ = 0.0, TotalFlashPE = 0, MaxOpHitPE = 0, FlashTime = 0;
         int NMatchedHits = MatchedHits.size();
+
         for (int j = 0; j < NMatchedHits; j++)
         { // Loop over OpHits in the flash
           recob::OpHit OpHit = *MatchedHits[j];
@@ -750,6 +752,8 @@ namespace solar
             SOpHitFlashID.push_back(i);
           }
         } // End of OpHit loop
+
+        OpHitVec.push_back(MatchedHits);
         varY = varY / TotalFlashPE;
         varZ = varZ / TotalFlashPE;
         FlashTime = FlashTime / TotalFlashPE;
@@ -1193,17 +1197,18 @@ namespace solar
         MAdjClEndX = {};
         MAdjClEndY = {};
         MAdjClEndZ = {};
-        MAdjFlashTime = {};
+        MAdjFlashR = {};
         MAdjFlashPE = {};
-        MAdjFlashNHit = {};
-        MAdjFlashMaxPE = {};
+        MAdjFlashPur = {};
         MAdjFlashSTD = {};
+        MAdjFlashTime = {};
+        MAdjFlashNHit = {};
         MAdjFlashFast = {};
+        MAdjFlashMaxPE = {};
         MAdjFlashRecoX = {};
         MAdjFlashRecoY = {};
         MAdjFlashRecoZ = {};
-        MAdjFlashR = {};
-        MAdjFlashPur = {};
+        MAdjFlashResidual = {};
         MTrackStart = {-1e6, -1e6, -1e6};
         MTrackEnd = {-1e6, -1e6, -1e6};
 
@@ -1213,22 +1218,24 @@ namespace solar
           {
             continue;
           }
-          if (fGeometry == "HD" && sqrt(pow(MVecRecY[i] - MVecRecY[j], 2) + pow(MVecRecZ[i] - MVecRecZ[j], 2) + pow((MVecTime[i] - MVecTime[j]) * fDetectorSizeX / fDetectorDriftTime, 2)) > fAdjClusterRad)
+
+          double ClusterDistance = 0;
+          solaraux->ComputeDistance3D(ClusterDistance, MVecTime[i], MVecRecY[i], MVecRecZ[i], MVecTime[j], MVecRecY[j], MVecRecZ[j]);
+          if (ClusterDistance > fAdjClusterRad)
           {
             continue;
           }
-          if (fGeometry == "VD" && sqrt(pow(MVecRecY[i] - MVecRecY[j], 2) + pow(MVecRecZ[i] - MVecRecZ[j], 2) + pow((MVecTime[i] - MVecTime[j]) * fDetectorSizeX / (fDetectorDriftTime / 2), 2)) > fAdjClusterRad)
-          {
-            continue;
-          }
+
           if (MVecCharge[j] < fMinClusterCharge)
           {
             continue;
           }
+
           if (MVecCharge[j] > MVecCharge[i])
           {
             MPrimary = false;
           }
+
           MAdjClTime.push_back(MVecTime[j]);
           MAdjClCharge.push_back(MVecCharge[j]);
           MAdjClInd0Charge.push_back(MVecInd0Charge[j]);
@@ -1316,16 +1323,18 @@ namespace solar
           {
             continue;
           }
+
           if ((MVecTime[i] - OpFlashT[j]) > fAdjOpFlashTime)
           {
             continue;
           }
-          // if (sqrt(pow(MVecRecY[i] - OpFlashY[j], 2) + pow(MVecRecZ[i] - OpFlashZ[j], 2)) > fAdjOpFlashRad)
+
           // Instead of a circular cut, we apply an elliptical cut (dy/a)^2+(dz/b)^2<1
           if (pow(abs(MVecRecY[i] - OpFlashY[j]) / fAdjOpFlashY, 2) + pow(abs(MVecRecZ[i] - OpFlashZ[j]) / fAdjOpFlashZ, 2) > 1)
           {
             continue;
           }
+
           MAdjFlashTime.push_back(OpFlashT[j]);
           MAdjFlashPE.push_back(OpFlashPE[j]);
           MAdjFlashNHit.push_back(OpFlashNHit[j]);
@@ -1337,6 +1346,14 @@ namespace solar
           MAdjFlashRecoZ.push_back(OpFlashZ[j]);
           MAdjFlashR.push_back(sqrt(pow(MVecRecY[i] - OpFlashY[j], 2) + pow(MVecRecZ[i] - OpFlashZ[j], 2)));
           MAdjFlashPur.push_back(OpFlashMarlPur[j]);
+          // Initialize the residual variable for the flash matching
+          float OpFlashResidual = 0;
+          // Compute the time distance between the cluster and the flash. Use factor 2 to convert us to TPC tics
+          double MAdjFlashdT = 0;
+          solaraux->ComputeDistanceX(MAdjFlashdT, MVecTime[i], 2 * OpFlashT[j]);
+          // Compute the residual between the predicted cluster signal and the flash
+          adjophits->FlashMatchResidual(OpFlashResidual, OpHitVec[j], MAdjFlashdT, double(MVecRecY[i]), double(MVecRecZ[i]));
+          MAdjFlashResidual.push_back(OpFlashResidual);
         }
 
         // Fill the tree with the cluster information and the adjacent clusters and flashes

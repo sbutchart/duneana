@@ -39,12 +39,12 @@ BEGIN_PROLOG
     AdjClusterRad:              100.         # Radius to search for adj. clusters in [cm] units.
 
     GenerateAdjOpFlash:         false        # Generate OpFlashes.
-    OpFlashAlgoTime:            5            # Time window to look for adj. OpHits in [tick] units.
-    OpFlashAlgoRad:             300          # Distance to look for adj. OpHits in [cm] units.
+    OpFlashAlgoNHit:            5            # Min number of hits to consider a flash.
+    OpFlashAlgoTime:            3            # Time window to look for adj. OpHits in [tick] units.
+    OpFlashAlgoRad:             500          # Distance to look for adj. OpHits in [cm] units.
     OpFlashAlgoPE:              1.5          # PE threshold to look for adj. OpHits.
     OpFlashAlgoTriggerPE:       20           # PE threshold to trigger an OpFlash.
-    OpFlashAlgoCentroid:        false        # Use the centroid computation of the flash based on a likelihood estimation.
-    OpFlashAlgoDebug:           false        # Debug flag for the OpFlash algorithm.
+    # OpFlashAlgoCentroid:        false        # Use the centroid computation of the flash based on a likelihood estimation.
 
     AdjOpFlashTime:             4500         # Time window to look for adjacent flashes in [tick] units should be one full drift length.
     AdjOpFlashY:                200.         # Y distance to search for adj. OpFlashes reconstructed in [cm] units.

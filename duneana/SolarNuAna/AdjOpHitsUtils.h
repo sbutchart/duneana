@@ -53,22 +53,22 @@ namespace solar
             double STD;
         };
         explicit AdjOpHitsUtils(fhicl::ParameterSet const &p);
+        void CalcAdjOpHits(const std::vector<art::Ptr<recob::OpHit>> &Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters);
         void MakeFlashVector(std::vector<FlashInfo> &FlashVec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, art::Event const &evt);
-        void CalcAdjOpHits(std::vector<art::Ptr<recob::OpHit>> Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, bool HeavDebug);
-        void CalcAdjOpHitsFast(std::vector<art::Ptr<recob::OpHit>> Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, bool HeavDebug);
-        void FlashMatchResidual(float res, std::vector<art::Ptr<recob::OpHit>> Hits, double x, double y, double z);
+        void FlashMatchResidual(float &Residual, std::vector<art::Ptr<recob::OpHit>> Hits, double x, double y, double z);
         // void CalcCentroid(std::vector<art::Ptr<recob::OpHit>> Hits, double x, double y, double z);
         // double GaussianPDF(double x, double mean, double sigma);
 
     private:
         art::ServiceHandle<geo::Geometry> geo;
         // From fhicl configuration
+        const std::string fGeometry;
+        const int fOpFlashAlgoNHit;
         const float fOpFlashAlgoTime;
         const float fOpFlashAlgoRad;
         const float fOpFlashAlgoPE;
         const float fOpFlashAlgoTriggerPE;
         const bool fOpFlashAlgoCentroid;
-        const bool fOpFlashAlgoDebug;
     };
 }
 #endif

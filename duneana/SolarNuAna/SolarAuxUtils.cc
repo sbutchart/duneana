@@ -4,31 +4,30 @@ namespace solar
 {
     SolarAuxUtils::SolarAuxUtils(fhicl::ParameterSet const &p)
         : fGeometry(p.get<std::string>("Geometry")),
-          fDetectorSizeX(p.get<float>("DetectorSizeX")),
-          fDetectorDriftTime(p.get<float>("DetectorDriftTime"))
+          fDetectorSizeX(p.get<double>("DetectorSizeX")), // Changed type to double
+          fDetectorDriftTime(p.get<double>("DetectorDriftTime"))
     {
     }
 
-    void SolarAuxUtils::ComputeDistanceX(double dist, double t1, double t2)
+    void SolarAuxUtils::ComputeDistanceX(double &ClusterDistance, double t1, double t2)
     {
-        dist = 0;
+        ClusterDistance = 0;
         if (fGeometry == "HD")
         {
-            // (MVecTime[i] - MVecTime[j]) * fDetectorSizeX / fDetectorDriftTime
-            dist = abs(t1 - t2) * fDetectorSizeX / fDetectorDriftTime;
+            ClusterDistance = abs(t1 - t2) * fDetectorSizeX / fDetectorDriftTime;
         }
         else if (fGeometry == "VD")
         {
-            dist = abs(t1 - t2) * fDetectorSizeX / (fDetectorDriftTime / 2);
+            ClusterDistance = abs(t1 - t2) * fDetectorSizeX / (fDetectorDriftTime / 2);
         }
     }
 
-    void SolarAuxUtils::ComputeDistance3D(double dist, double t1, double y1, double z1, double t2, double y2, double z2)
+    void SolarAuxUtils::ComputeDistance3D(double &ClusterDistance, double t1, double y1, double z1, double t2, double y2, double z2)
     {
-        dist = 0;
-        float x12 = 0;
-        SolarAuxUtils::ComputeDistanceX(x12, t1, t2);
-        dist = sqrt(pow(x12, 2) + pow(y1 - y2, 2) + pow(z1 - z2, 2));
+        ClusterDistance = 0;
+        double x12 = 0;
+        ComputeDistanceX(x12, t1, t2);
+        ClusterDistance = sqrt(pow(x12, 2) + pow(y1 - y2, 2) + pow(z1 - z2, 2));
     }
 
     // This function creates a terminal color printout

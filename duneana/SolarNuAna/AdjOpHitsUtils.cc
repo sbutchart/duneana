@@ -118,7 +118,7 @@ namespace solar
     return;
   }
 
-  void AdjOpHitsUtils::CalcAdjOpHits(const std::vector<art::Ptr<recob::OpHit>> &Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters)
+  void AdjOpHitsUtils::CalcAdjOpHits(const std::vector<art::Ptr<recob::OpHit>> &Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, std::vector<std::vector<int>> &Idx)
   {
     const float TriggerPE = fOpFlashAlgoTriggerPE; // Minimum PE for a hit to trigger a flash
     const float TimeRange = fOpFlashAlgoTime;      // Time in ns
@@ -280,6 +280,15 @@ namespace solar
         Clusters.push_back(std::move(AdjHitVec));
         sOpHitClustering += "Cluster size: " + SolarAuxUtils::str(int(Clusters.back().size())) + "\n";
         SolarAuxUtils::PrintInColor(sOpHitClustering, SolarAuxUtils::GetColor("green"), "Debug");
+
+        // Store the original indices of the clustered hits
+        std::vector<int> clusterIdx;
+        for (const auto &hit : Clusters.back())
+        {
+          int idx = std::distance(Vec.begin(), std::find(Vec.begin(), Vec.end(), hit));
+          clusterIdx.push_back(idx);
+        }
+        Idx.push_back(clusterIdx);
       }
       else
       {

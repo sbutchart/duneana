@@ -618,6 +618,7 @@ namespace solar
     std::vector<art::Ptr<recob::OpHit>> OpHitList;
     art::Handle<std::vector<recob::OpHit>> OpHitHandle;
     std::vector<std::vector<art::Ptr<recob::OpHit>>> OpHitVec;
+    std::vector<std::vector<int>> OpHitIdx;
     if (evt.getByLabel(fOpHitLabel, OpHitHandle))
     {
       art::fill_ptr_vector(OpHitList, OpHitHandle);
@@ -626,7 +627,7 @@ namespace solar
     if (fGenerateAdjOpFlash)
     {
       std::vector<AdjOpHitsUtils::FlashInfo> FlashVec;
-      adjophits->CalcAdjOpHits(OpHitList, OpHitVec);
+      adjophits->CalcAdjOpHits(OpHitList, OpHitVec, OpHitIdx);
       adjophits->MakeFlashVector(FlashVec, OpHitVec, evt);
       OpFlashNum = int(FlashVec.size());
       for (int i = 0; i < int(FlashVec.size()); i++)

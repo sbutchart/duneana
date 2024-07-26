@@ -53,7 +53,7 @@ namespace solar
             double STD;
         };
         explicit AdjOpHitsUtils(fhicl::ParameterSet const &p);
-        void CalcAdjOpHits(const std::vector<art::Ptr<recob::OpHit>> &Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters);
+        void CalcAdjOpHits(const std::vector<art::Ptr<recob::OpHit>> &Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, std::vector<std::vector<int>> &Idx);
         void MakeFlashVector(std::vector<FlashInfo> &FlashVec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, art::Event const &evt);
         void FlashMatchResidual(float &Residual, std::vector<art::Ptr<recob::OpHit>> Hits, double x, double y, double z);
         // void CalcCentroid(std::vector<art::Ptr<recob::OpHit>> Hits, double x, double y, double z);
@@ -64,11 +64,11 @@ namespace solar
         // From fhicl configuration
         const std::string fGeometry;
         const int fOpFlashAlgoNHit;
+        const double fDetectorSizeX;
         const float fOpFlashAlgoTime;
         const float fOpFlashAlgoRad;
         const float fOpFlashAlgoPE;
         const float fOpFlashAlgoTriggerPE;
-        const double fDetectorSizeX;
         const bool fOpFlashAlgoCentroid;
     };
 }

@@ -120,17 +120,12 @@ namespace solar
 
   void AdjOpHitsUtils::CalcAdjOpHits(const std::vector<art::Ptr<recob::OpHit>> &Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, std::vector<std::vector<int>> &Idx)
   {
-    const float TriggerPE = fOpFlashAlgoTriggerPE; // Minimum PE for a hit to trigger a flash
-    const float TimeRange = fOpFlashAlgoTime;      // Time in ns
-    const float RadRange = fOpFlashAlgoRad;        // Range in cm
-    const float MinPE = fOpFlashAlgoPE;            // Minimum PE for a hit to be clustered
-
     // Define MyVec as a copy of the input vector but only with hits with PE > MinPE
     std::vector<art::Ptr<recob::OpHit>> MyVec;
     // Don't need cluster all the hits, only those with PE > MinPE that are close to a big hit
     for (auto &hit : Vec)
     {
-      if (hit->PE() >= MinPE)
+      if (hit->PE() >= fOpFlashAlgoPE)
       {
         MyVec.push_back(hit);
       }
@@ -149,7 +144,7 @@ namespace solar
     {
       std::string sOpHitClustering = "";
       const auto &hit = *it;
-      if (hit->PE() < TriggerPE)
+      if (hit->PE() < fOpFlashAlgoTriggerPE)
         continue;
 
       bool main_hit = true;
@@ -167,7 +162,7 @@ namespace solar
           break;
 
         auto &adjHit = *it2; // Update adjHit here
-        if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > TimeRange)
+        if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > fOpFlashAlgoTime)
           break;
 
         int refHit1 = hit->OpChannel();
@@ -198,7 +193,7 @@ namespace solar
           continue;
 
         auto ref4 = TVector3(ref1.X(), ref1.Y(), ref1.Z()) - TVector3(ref2.X(), ref2.Y(), ref2.Z());
-        if (ref4.Mag() < RadRange)
+        if (ref4.Mag() < fOpFlashAlgoRad)
         {
           if (adjHit->PE() > hit->PE())
           {
@@ -226,7 +221,7 @@ namespace solar
           break;
         auto &adjHit = *it3;
 
-        if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > TimeRange)
+        if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > fOpFlashAlgoTime)
           break;
 
         int refHit1 = hit->OpChannel();
@@ -256,7 +251,7 @@ namespace solar
           continue;
 
         auto ref4 = TVector3(ref1.X(), ref1.Y(), ref1.Z()) - TVector3(ref2.X(), ref2.Y(), ref2.Z());
-        if (ref4.Mag() < RadRange)
+        if (ref4.Mag() < fOpFlashAlgoRad)
         {
           if (adjHit->PE() > hit->PE())
           {

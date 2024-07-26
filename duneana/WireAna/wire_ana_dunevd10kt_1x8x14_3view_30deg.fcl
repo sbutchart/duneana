@@ -17,14 +17,14 @@ services:
 physics:{
   analyzers:{
 
-    wireana:{
+    wire:{
       module_label: wireana
       module_type:  WireAnaTree
-      ModuleLabel:  "tpcrawdecoder:daq" 
+      CalWireModuleLabel:  "tpcrawdecoder:gauss" 
     }
   }
 
-  ana:       [ wireana ]
+  ana:       [ wire ]
   end_paths: [ana]  
 }
 

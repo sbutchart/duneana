@@ -1,9 +1,11 @@
 #include "services_dune.fcl"
-process_name: RawDigitAna
+#include "tools_dune.fcl"
+
+process_name: WireAnaTree
 
 services:
 {
-  TFileService: { fileName: "%ifb_ana_rawdigit.root" }
+  TFileService: { fileName: "%ifb_wire.root" }
   MemoryTracker:     {}
   TimeTracker:       {}
   RandomNumberGenerator: {}
@@ -18,13 +20,24 @@ source:{
 physics:{
   analyzers:{
 
-    rawdigit:{
-      module_label: rawdigitana
-      module_type:  RawDigitAnaTree
-      ModuleLabel:  "caldata:dataprep" 
+    wire:{
+      module_label: wireana
+      module_type:  WireAnaTree
+      CalWireModuleLabel:  "caldata:dataprep" 
     }
   }
 
-  ana:  [ rawdigitana ]
+  ana:           [ wireana ]
   end_paths:     [ana]  
+}
+
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_wire.root"
+    dataTier:    "analized"
+    compressionLevel: 1
+  }
 }

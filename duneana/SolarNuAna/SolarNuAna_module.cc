@@ -94,7 +94,7 @@ namespace solar
     TTree *fMCTruthTree;
     TTree *fSolarNuAnaTree;
     std::string TNuInteraction;
-    bool MPrimary;
+    std::vector<std::map<int, simb::MCParticle>> GeneratorParticles = {};
     int Event, Flag, MNHit, MGen, MTPC, MInd0TPC, MInd1TPC, MInd0NHits, MInd1NHits, MMainID, MMainPDG, MMainParentPDG, TrackNum, OpHitNum, OpFlashNum, MTrackNPoints;
     float TNuE, TNuX, TNuY, TNuZ, MTime, MCharge, MMaxCharge, MInd0Charge, MInd1Charge, MInd0MaxCharge, MInd1MaxCharge;
     float MInd0dT, MInd1dT, MInd0RecoY, MInd1RecoY, MRecY, MRecZ, MPur, MMainE, MMainP, MMainK, MMainT, MMainParentE, MMainParentP, MMainParentK, MMainParentT, MTrackChi2;
@@ -106,9 +106,9 @@ namespace solar
     std::vector<float> MAdjClMainX, MAdjClMainY, MAdjClMainZ, MAdjClEndX, MAdjClEndY, MAdjClEndZ, MMarleyFrac, MGenFrac;
     std::vector<float> MAdjFlashTime, MAdjFlashResidual, MAdjFlashPE, MAdjFlashNHit, MAdjFlashMaxPE, MAdjFlashRecoX, MAdjFlashRecoY, MAdjFlashRecoZ, MAdjFlashR, MAdjFlashPur, MAdjFlashSTD, MAdjFlashFast;
     std::vector<float> MarleyEList, MarleyPList, MarleyKList, MarleyTList, MarleyEndXList, MarleyEndYList, MarleyEndZList, MarleyMaxEDepList, MarleyMaxEDepXList, MarleyMaxEDepYList, MarleyMaxEDepZList;
-    std::vector<double> MTrackStart, MTrackEnd;
     std::vector<double> MMainVertex, MEndVertex, MMainParentVertex;
-    std::vector<std::map<int, simb::MCParticle>> GeneratorParticles = {};
+    std::vector<double> MTrackStart, MTrackEnd;
+    bool MPrimary;
 
     // --- OpFlash Variables
     std::vector<float> OpFlashMarlPur, OpFlashPE, OpFlashMaxPE, OpFlashX, OpFlashY, OpFlashZ, OpFlashT, OpFlashDeltaT, OpFlashNHit, OpFlashSTD, OpFlashFast;

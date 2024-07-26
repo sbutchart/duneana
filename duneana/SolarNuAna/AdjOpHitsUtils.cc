@@ -10,6 +10,7 @@ namespace solar
         fOpFlashAlgoRad(p.get<float>("OpFlashAlgoRad")),
         fOpFlashAlgoPE(p.get<float>("OpFlashAlgoPE")),
         fOpFlashAlgoTriggerPE(p.get<float>("OpFlashAlgoTriggerPE")),
+        fDetectorSizeX(p.get<double>("DetectorSizeX")), // Changed type to double
         fOpFlashAlgoCentroid(p.get<bool>("OpFlashAlgoCentroid"))
   {
   }
@@ -169,30 +170,29 @@ namespace solar
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > TimeRange)
           break;
 
-        // If sign of x is the same, then the two hits are in the same drift volume and can be clustered, else skip
-        auto ref1 = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
-        auto ref2 = geo->OpDetGeoFromOpChannel(adjHit->OpChannel()).GetCenter();
-        float ref3 = 0;
+        int refHit1 = hit->OpChannel();
+        int refHit2 = adjHit->OpChannel();
+        auto ref1 = geo->OpDetGeoFromOpChannel(refHit1).GetCenter();
+        auto ref2 = geo->OpDetGeoFromOpChannel(refHit2).GetCenter();
 
+        // If sign of x is the same (HD), then the two hits are in the same drift volume and can be clustered, else skip.
+        // If x is smaller than drift (VD), then one hit is in membrane XAs and we skip (awaiting better implementation!!).
         if (fGeometry == "HD")
         {
-          ref3 = ref1.X() * ref2.X();
+          if (ref1.X() * ref2.X() < 0)
+            continue;
         }
         else if (fGeometry == "VD")
         {
           // Only use cothode hits in VD for now
-          if (ref1.X() > -350 || ref2.X() > -350)
-          {
-            ref3 = -1e6;
-          }
+          if (ref1.X() > -fDetectorSizeX || ref2.X() > -fDetectorSizeX)
+            continue;
         }
-        else
+        else // If the geometry is not HD or VD, skip
         {
-          ref3 = -1e6;
-        }
-        if (ref3 < 0)
+          SolarAuxUtils::PrintInColor("Geometry not recognized: Must be 'HD' or 'VD'", SolarAuxUtils::GetColor("red"), "Error");
           continue;
-
+        }
         // If hit has already been clustered, skip
         if (ClusteredHits[std::distance(MyVec.begin(), it2)])
           continue;
@@ -229,27 +229,27 @@ namespace solar
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > TimeRange)
           break;
 
-        auto ref1 = geo->OpDetGeoFromOpChannel(hit->OpChannel()).GetCenter();
-        auto ref2 = geo->OpDetGeoFromOpChannel(adjHit->OpChannel()).GetCenter();
-        float ref3 = 0;
+        int refHit1 = hit->OpChannel();
+        int refHit2 = adjHit->OpChannel();
+        auto ref1 = geo->OpDetGeoFromOpChannel(refHit1).GetCenter();
+        auto ref2 = geo->OpDetGeoFromOpChannel(refHit2).GetCenter();
+
         if (fGeometry == "HD")
         {
-          ref3 = ref1.X() * ref2.X();
+          if (ref1.X() * ref2.X() < 0)
+            continue;
         }
-        if (fGeometry == "VD")
+        else if (fGeometry == "VD")
         {
           // Only use cothode hits in VD for now
-          if (ref1.X() > -350 || ref2.X() > -350)
-          {
-            ref3 = -1e6;
-          }
+          if (ref1.X() > -fDetectorSizeX || ref2.X() > -fDetectorSizeX)
+            continue;
         }
-        else
+        else // If the geometry is not HD or VD, skip
         {
-          ref3 = -1e6;
-        }
-        if (ref3 < 0)
+          SolarAuxUtils::PrintInColor("Geometry not recognized: Must be 'HD' or 'VD'", SolarAuxUtils::GetColor("red"), "Error");
           continue;
+        }
 
         // if hit has already been clustered, skip
         if (ClusteredHits[std::distance(MyVec.begin(), it3)])
@@ -302,7 +302,7 @@ namespace solar
     // Get the first hit PE and calculate the squared distance and angle to the reference point
     float firstHitPE = Hits[0]->PE();
     float firstHitDistSq = pow(firstHitY - y, 2) + pow(firstHitZ - z, 2);
-    // float firstHitAngle = atan2(sqrt(firstHitDistSq), x);
+    float firstHitAngle = atan2(sqrt(firstHitDistSq), x);
 
     // Calculate the expected PE value for the reference point based on the first hit PE and the squared distance + angle
     // float refHitPE = firstHitPE * (pow(x, 2) + firstHitDistSq) / pow(x, 2) / cos(firstHitAngle);
@@ -333,14 +333,13 @@ namespace solar
                         " RefPE: " + SolarAuxUtils::str(refHitPE) +
                         " X: " + SolarAuxUtils::str(x) +
                         " Dist: " + SolarAuxUtils::str(sqrt(firstHitDistSq)) +
-                        // " Angle: " + SolarAuxUtils::str(firstHitAngle) +
+                        " Angle: " + SolarAuxUtils::str(firstHitAngle) +
                         " Residual: " + SolarAuxUtils::str(Residual);
 
     SolarAuxUtils::PrintInColor(debug, SolarAuxUtils::GetColor("yellow"), "Debug");
-    // std::cout << debug << std::endl;
-
     return;
   }
+
   // Function to calculate the Gaussian probability density function
   // double AdjOpHitsUtils::GaussianPDF(double x, double mean, double sigma)
   // {

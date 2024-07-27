@@ -22,8 +22,8 @@
 #include "lardataobj/RecoBase/Wire.h"
 
 
-constexpr int kMaxNumberCh = 12000;
-constexpr int kMaxTicks= 6000;
+constexpr int kMaxNumberCh = 41471;
+constexpr int kMaxTicks= 8000;
 
 namespace wire {
   class WireAnaTree;

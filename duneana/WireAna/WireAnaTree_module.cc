@@ -22,8 +22,8 @@
 #include "lardataobj/RecoBase/Wire.h"
 
 
-constexpr int kMaxNumberCh = 2560;
-constexpr int kMaxTicks= 6000;
+constexpr int kMaxNumberCh = 41471;
+constexpr int kMaxTicks= 8000;
 
 namespace wire {
   class WireAnaTree;
@@ -87,16 +87,23 @@ void wire::WireAnaTree::endJob(){
 }
 void wire::WireAnaTree::analyze(art::Event const& e)
 {
+  // Print a hello message.
+  mf::LogInfo("WireAnaTree") << "Hello, WireAnaTree! ";
   // Implementation of required member function here.
   auto const& Wires = *(e.getValidHandle<std::vector<recob::Wire>>(fCalWireModuleLabel));
   fRun = e.run();
   fSubrun = e.subRun();
   fEvent = e.id().event();
 
+  // Print general info about event and wires
+  mf::LogInfo("WireAnaTree") << "Run: " << fRun << " Subrun: " << fSubrun << " Event: " << fEvent;
+  mf::LogInfo("WireAnaTree") << "Number of wires: " << Wires.size();
   unsigned int idx =0;
   for (recob::Wire const& wire: Wires) {
     unsigned int jdx =0;
+    if (idx >= kMaxNumberCh) break;
     for ( const float &signal : wire.Signal() ){
+      if (jdx >= kMaxTicks) break;
       fW_signal[idx][jdx]= signal;
       ++ jdx;
     }

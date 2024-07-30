@@ -21,8 +21,8 @@
 #include "lardataobj/RawData/RawDigit.h"
 
 
-constexpr int kMaxNumberCh = 2560;
-constexpr int kMaxTicks= 6000;
+constexpr int kMaxNumberCh = 41471;
+constexpr int kMaxTicks= 8000;
 
 namespace rawdigit {
   class RawDigitAna;

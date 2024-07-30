@@ -48,6 +48,10 @@ dune35t_analysistree:
  AngleRecoNuePFPLabel: "angularreconuepfp"
  AngleRecoNumuPFPLabel: "angularreconumupfp"
 
+ SaveCVNScoresInfo: false
+ IsAtmoCVN: false
+ CVNLabel: "cvneva:cvnresult"
+
 
  UseBuffers:               false
  IgnoreMissingShowers:     false
@@ -64,7 +68,7 @@ dune35t_analysistree:
  SaveTrackInfo:            true
  SaveVertexInfo:           true 
  SaveNuRecoEnergyInfo:     false # set to false because one needs to call products first
- SaveNuAngleEnergyInfo:    false # set to false because one needs to call products first
+ SaveNuRecoAngleInfo:      false # set to false because one needs to call products first
  SavePandoraNuVertexInfo:  false # Don't have in the 35 ton
  SaveClusterInfo:          true
  SaveFlashInfo:            true

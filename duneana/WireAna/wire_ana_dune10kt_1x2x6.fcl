@@ -14,14 +14,13 @@ services:
                           @table::dunefd_1x2x6_reco_services
 }
 
-
 physics:{
   analyzers:{
 
     wire:{
-      module_label: wire
+      module_label: wireana
       module_type:  WireAnaTree
-      ModuleLabel:  "tpcrawdecoder:daq" 
+      CalWireModuleLabel:  "tpcrawdecoder:gauss" 
     }
   }
 

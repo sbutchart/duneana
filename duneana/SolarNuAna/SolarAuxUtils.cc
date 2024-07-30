@@ -3,9 +3,33 @@
 namespace solar
 {
     SolarAuxUtils::SolarAuxUtils(fhicl::ParameterSet const &p)
+        : fGeometry(p.get<std::string>("Geometry")),
+          fDetectorSizeX(p.get<double>("DetectorSizeX")), // Changed type to double
+          fDetectorDriftTime(p.get<double>("DetectorDriftTime"))
     {
-        // From fhicl configuration
     }
+
+    void SolarAuxUtils::ComputeDistanceX(double &ClusterDistance, double t1, double t2)
+    {
+        ClusterDistance = 0;
+        if (fGeometry == "HD")
+        {
+            ClusterDistance = abs(t1 - t2) * fDetectorSizeX / fDetectorDriftTime;
+        }
+        else if (fGeometry == "VD")
+        {
+            ClusterDistance = abs(t1 - t2) * fDetectorSizeX / (fDetectorDriftTime / 2);
+        }
+    }
+
+    void SolarAuxUtils::ComputeDistance3D(double &ClusterDistance, double t1, double y1, double z1, double t2, double y2, double z2)
+    {
+        ClusterDistance = 0;
+        double x12 = 0;
+        ComputeDistanceX(x12, t1, t2);
+        ClusterDistance = sqrt(pow(x12, 2) + pow(y1 - y2, 2) + pow(z1 - z2, 2));
+    }
+
     // This function creates a terminal color printout
     void SolarAuxUtils::PrintInColor(std::string MyString, int Color, std::string Type)
     {

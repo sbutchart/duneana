@@ -10,8 +10,8 @@ namespace solar
         fOpFlashAlgoRad(p.get<float>("OpFlashAlgoRad")),
         fOpFlashAlgoPE(p.get<float>("OpFlashAlgoPE")),
         fOpFlashAlgoTriggerPE(p.get<float>("OpFlashAlgoTriggerPE")),
-        fDetectorSizeX(p.get<double>("DetectorSizeX")), // Changed type to double
-        fOpFlashAlgoCentroid(p.get<bool>("OpFlashAlgoCentroid"))
+        fDetectorSizeX(p.get<double>("DetectorSizeX")) // Changed type to double
+        // fOpFlashAlgoCentroid(p.get<bool>("OpFlashAlgoCentroid"))
   {
   }
   void AdjOpHitsUtils::MakeFlashVector(std::vector<FlashInfo> &FlashVec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, art::Event const &evt)

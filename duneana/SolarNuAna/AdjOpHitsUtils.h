@@ -69,7 +69,7 @@ namespace solar
         const float fOpFlashAlgoPE;
         const float fOpFlashAlgoTriggerPE;
         const double fDetectorSizeX;
-        const bool fOpFlashAlgoCentroid;
+        // const bool fOpFlashAlgoCentroid;
     };
 }
 #endif

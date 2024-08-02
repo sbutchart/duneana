@@ -11,7 +11,7 @@ namespace solar
         fOpFlashAlgoPE(p.get<float>("OpFlashAlgoPE")),
         fOpFlashAlgoTriggerPE(p.get<float>("OpFlashAlgoTriggerPE")),
         fDetectorSizeX(p.get<double>("DetectorSizeX")) // Changed type to double
-        // fOpFlashAlgoCentroid(p.get<bool>("OpFlashAlgoCentroid"))
+                                                       // fOpFlashAlgoCentroid(p.get<bool>("OpFlashAlgoCentroid"))
   {
   }
   void AdjOpHitsUtils::MakeFlashVector(std::vector<FlashInfo> &FlashVec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, art::Event const &evt)
@@ -121,7 +121,7 @@ namespace solar
   void AdjOpHitsUtils::CalcAdjOpHits(const std::vector<art::Ptr<recob::OpHit>> &Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, std::vector<std::vector<int>> &Idx)
   {
     // Define MyVec as a copy of the input vector but only with hits with PE > MinPE
-    std::vector<art::Ptr<recob::OpHit>> MyVec;
+    std::vector<art::Ptr<recob::OpHit>> MyVec = {};
     // Don't need cluster all the hits, only those with PE > MinPE that are close to a big hit
     for (auto &hit : Vec)
     {
@@ -130,7 +130,12 @@ namespace solar
         MyVec.push_back(hit);
       }
     }
-    std::string sDebugInfo = "Selected ophits " + SolarAuxUtils::str(int(MyVec.size())) + " from " + SolarAuxUtils::str(int(Vec.size())) + "\n";
+    // If no hits with PE > MinPE are found, return
+    if (MyVec.empty())
+      return;
+
+    // Define a debug string to print the number of hits selected
+    std::string sDebugInfo = "CalcAdjOpHits: Selected ophits " + SolarAuxUtils::str(int(MyVec.size())) + " from " + SolarAuxUtils::str(int(Vec.size())) + "\n";
 
     // Sort hits according to time
     std::stable_sort(MyVec.begin(), MyVec.end(), [](art::Ptr<recob::OpHit> a, art::Ptr<recob::OpHit> b)
@@ -139,7 +144,7 @@ namespace solar
     // Create a vector of bools to track if a hit has been clustered or not
     std::vector<bool> ClusteredHits(MyVec.size(), false);
 
-    SolarAuxUtils::PrintInColor(sDebugInfo, SolarAuxUtils::GetColor("yellow"), "Debug");
+    SolarAuxUtils::PrintInColor(sDebugInfo, SolarAuxUtils::GetColor("blue"), "Info");
     for (auto it = MyVec.begin(); it != MyVec.end(); ++it)
     {
       std::string sOpHitClustering = "";

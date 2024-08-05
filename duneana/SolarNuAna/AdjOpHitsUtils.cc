@@ -343,10 +343,12 @@ namespace solar
     }
 
     Residual /= PE;
+    Residual /= float(Hits.size());
 
     std::string debug = "PE: " + SolarAuxUtils::str(PE) +
                         " FisrtPE: " + SolarAuxUtils::str(firstHitPE) +
                         " RefPE: " + SolarAuxUtils::str(refHitPE) +
+                        " NHits: " + SolarAuxUtils::str(int(Hits.size())) +
                         " X: " + SolarAuxUtils::str(x) +
                         " Dist: " + SolarAuxUtils::str(sqrt(firstHitDistSq)) +
                         " Angle: " + SolarAuxUtils::str(firstHitAngle) +

@@ -6,6 +6,7 @@
 
 physics.analyzers.solarnuana.ClusterPreselectionNHit: 2
 physics.analyzers.solarnuana.SaveSignalOpHits: true
+physics.analyzers.solarnuana.SaveAdjOpFlashes: true
 
 physics.analyzers.solarnuana.GenerateAdjOpFlash:      true        # Generate OpFlashes.
 physics.analyzers.solarnuana.OpFlashAlgoTime:         5           # Time window to look for adj. OpHits in [tick] units.

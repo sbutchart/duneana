@@ -54,7 +54,7 @@ BEGIN_PROLOG
 
     SaveMarleyEDep:             false        # Save the energy deposition of the marley energy deposition in the LAr.
     SaveSignalOpHits:           false        # Save the OpHits that are associated with the signal.
-    SaveAdjOpFlashes:           false        # Save the AdjOpFlash information for each preselection cluster
+    SaveOpFlashInfo:            false        # Save the AdjOpFlash information for each preselection cluster
   }
 
   legacy_solar_nu_ana_hd_v2: @local::solar_nu_ana_hd

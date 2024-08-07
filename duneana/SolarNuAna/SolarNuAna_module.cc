@@ -87,7 +87,7 @@ namespace solar
     float fClusterMatchTime, fAdjClusterRad, fMinClusterCharge, fClusterMatchCharge, fAdjOpFlashY, fAdjOpFlashZ, fAdjOpFlashTime, fAdjOpFlashMaxPERatioCut, fAdjOpFlashMinPECut, fClusterMatchNHit, fClusterAlgoTime;
     std::vector<std::string> fLabels;
     float fOpFlashAlgoTime, fOpFlashAlgoRad, fOpFlashAlgoPE, fOpFlashAlgoTriggerPE;
-    bool fClusterPreselectionTrack, fClusterPreselectionPrimary, fGenerateAdjOpFlash, fSaveMarleyEDep, fSaveSignalOpHits, fSaveAdjOpFlashes;
+    bool fClusterPreselectionTrack, fClusterPreselectionPrimary, fGenerateAdjOpFlash, fSaveMarleyEDep, fSaveSignalOpHits, fSaveOpFlashInfo;
     // bool fOpFlashAlgoCentroid;
 
     // --- Our TTrees, and its associated variables.
@@ -112,7 +112,8 @@ namespace solar
     bool MPrimary;
 
     // --- OpFlash Variables
-    std::vector<float> OpFlashMarlPur, OpFlashPE, OpFlashMaxPE, OpFlashX, OpFlashY, OpFlashZ, OpFlashT, OpFlashDeltaT, OpFlashNHit, OpFlashSTD, OpFlashFast;
+    std::vector<int> OpFlashID, OpFlashNHit;
+    std::vector<float> OpFlashPur, OpFlashPE, OpFlashMaxPE, OpFlashX, OpFlashY, OpFlashZ, OpFlashT, OpFlashDeltaT, OpFlashSTD, OpFlashFast;
 
     // --- MatchedFlash Variables
     int MFlashNHit;
@@ -188,7 +189,7 @@ namespace solar
     fAdjOpFlashMinPECut = p.get<float>("AdjOpFlashMinPECut");
     fSaveMarleyEDep = p.get<bool>("SaveMarleyEDep");
     fSaveSignalOpHits = p.get<bool>("SaveSignalOpHits");
-    fSaveAdjOpFlashes = p.get<bool>("SaveAdjOpFlashes");
+    fSaveOpFlashInfo = p.get<bool>("SaveOpFlashInfo");
   } // Reconfigure
 
   //......................................................
@@ -237,7 +238,7 @@ namespace solar
     fConfigTree->Branch("AdjOpFlashMinPECut", &fAdjOpFlashMinPECut);
     fConfigTree->Branch("SaveMarleyEDep", &fSaveMarleyEDep);
     fConfigTree->Branch("SaveSignalOpHits", &fSaveSignalOpHits);
-    fConfigTree->Branch("SaveAdjOpFlashes", &fSaveAdjOpFlashes);
+    fConfigTree->Branch("SaveOpFlashInfo", &fSaveOpFlashInfo);
 
     // MC Truth info.
     fMCTruthTree->Branch("Event", &Event, "Event/I");                // Event number
@@ -287,6 +288,19 @@ namespace solar
       fMCTruthTree->Branch("OpHitT", &SOpHitT);             // OpHit T
       fMCTruthTree->Branch("OpHitChannel", &SOpHitChannel); // OpHit Channel
       fMCTruthTree->Branch("OpHitFlashID", &SOpHitFlashID); // OpHit Area
+    }
+    if (fSaveOpFlashInfo)
+    {
+      fMCTruthTree->Branch("OpFlashX", &OpFlashX);         // OpFlash X
+      fMCTruthTree->Branch("OpFlashY", &OpFlashY);         // OpFlash Y
+      fMCTruthTree->Branch("OpFlashZ", &OpFlashZ);         // OpFlash Z
+      fMCTruthTree->Branch("OpFlashID", &OpFlashID);       // OpFlash ID
+      fMCTruthTree->Branch("OpFlashPE", &OpFlashPE);       // OpFlash PE
+      fMCTruthTree->Branch("OpFlashTime", &OpFlashT);      // OpFlash Time
+      fMCTruthTree->Branch("OpFlashPur", &OpFlashPur);     // OpFlash Purity
+      fMCTruthTree->Branch("OpFlashSTD", &OpFlashSTD);     // OpFlash STD
+      fMCTruthTree->Branch("OpFlashNHit", &OpFlashNHit);   // OpFlash NHit
+      fMCTruthTree->Branch("OpFlashMaxPE", &OpFlashMaxPE); // OpFlash Max PE
     }
 
     // Repeated Truth info.
@@ -387,7 +401,7 @@ namespace solar
     fSolarNuAnaTree->Branch("AdjClEndZ", &MAdjClEndZ);                   // Adj. clusters' end Z [cm]
 
     // Adj. Flash info.
-    if (fSaveAdjOpFlashes)
+    if (fSaveOpFlashInfo)
     {
       fSolarNuAnaTree->Branch("AdjOpFlashR", &MAdjFlashR);               // Adj. flash' reco distance [cm]
       fSolarNuAnaTree->Branch("AdjOpFlashPE", &MAdjFlashPE);             // Adj. flash' tot #PE [ADC*ticks]
@@ -666,10 +680,11 @@ namespace solar
       for (int i = 0; i < int(FlashVec.size()); i++)
       {
         AdjOpHitsUtils::FlashInfo TheFlash = FlashVec[i];
-        double OpFlashPur = 0;
+        double ThisOpFlashPur = 0;
         OpFlashMaxPE.push_back(TheFlash.MaxPE);
         OpFlashSTD.push_back(TheFlash.STD);
         OpFlashFast.push_back(TheFlash.FastToTotal);
+        OpFlashID.push_back(i);
         OpFlashPE.push_back(TheFlash.PE);
         OpFlashX.push_back(TheFlash.X);
         OpFlashY.push_back(TheFlash.Y);
@@ -698,7 +713,7 @@ namespace solar
           {
             ThisOphitPurity /= int(ThisOpHitTrackIds.size());
           }
-          OpFlashPur += ThisOphitPurity;
+          ThisOpFlashPur += ThisOphitPurity;
           auto OpHitXYZ = geo->OpDetGeoFromOpChannel(OpHit.OpChannel()).GetCenter();
           SOpHitPur.push_back(ThisOphitPurity / int(ThisOpHitTrackIds.size()));
           SOpHitChannel.push_back(OpHit.OpChannel());
@@ -712,17 +727,17 @@ namespace solar
         // Check if OpHitVec[i] is empty
         if (OpHitVec[i].size() == 0)
         {
-          OpFlashPur = 0;
+          ThisOpFlashPur = 0;
         }
         else
         {
-          OpFlashPur /= int(OpHitVec[i].size());
+          ThisOpFlashPur /= int(OpHitVec[i].size());
         }
-        OpFlashMarlPur.push_back(OpFlashPur);
+        OpFlashPur.push_back(ThisOpFlashPur);
         if (abs(TheFlash.Time) < 20)
         {
-          mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (fast/ratio/tot/STD) " << TheFlash.FastToTotal << "/" << TheFlash.MaxPE / TheFlash.PE << "/" << TheFlash.PE << "/" << TheFlash.STD << " with purity " << OpFlashPur << " time " << TheFlash.Time;
-          sOpFlashTruth += "Marley OpFlash PE (fast/ratio/tot/STD) " + SolarAuxUtils::str(TheFlash.FastToTotal) + "/" + SolarAuxUtils::str(TheFlash.MaxPE / TheFlash.PE) + "/" + SolarAuxUtils::str(TheFlash.PE) + "/" + SolarAuxUtils::str(TheFlash.STD) + " with purity " + SolarAuxUtils::str(OpFlashPur) + " time " + SolarAuxUtils::str(TheFlash.Time) + " vertex (" + SolarAuxUtils::str(TheFlash.X) + ", " + SolarAuxUtils::str(TheFlash.Y) + ", " + SolarAuxUtils::str(TheFlash.Z) + ")\n";
+          mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (fast/ratio/tot/STD) " << TheFlash.FastToTotal << "/" << TheFlash.MaxPE / TheFlash.PE << "/" << TheFlash.PE << "/" << TheFlash.STD << " with purity " << ThisOpFlashPur << " time " << TheFlash.Time;
+          sOpFlashTruth += "Marley OpFlash PE (fast/ratio/tot/STD) " + SolarAuxUtils::str(TheFlash.FastToTotal) + "/" + SolarAuxUtils::str(TheFlash.MaxPE / TheFlash.PE) + "/" + SolarAuxUtils::str(TheFlash.PE) + "/" + SolarAuxUtils::str(TheFlash.STD) + " with purity " + SolarAuxUtils::str(ThisOpFlashPur) + " time " + SolarAuxUtils::str(TheFlash.Time) + " vertex (" + SolarAuxUtils::str(TheFlash.X) + ", " + SolarAuxUtils::str(TheFlash.Y) + ", " + SolarAuxUtils::str(TheFlash.Z) + ")\n";
         }
       }
     }
@@ -789,17 +804,18 @@ namespace solar
 
         mf::LogDebug("SolarNuAna") << "Evaluating Flash purity";
         int TerminalOutput = SolarAuxUtils::supress_stdout();
-        double OpFlashPur = pbt->OpHitCollectionPurity(SignalTrackIDs, MatchedHits);
+        double ThisOpFlashPur = pbt->OpHitCollectionPurity(SignalTrackIDs, MatchedHits);
         SolarAuxUtils::resume_stdout(TerminalOutput);
         mf::LogDebug("SolarNuAna") << "PE of this OpFlash " << TotalFlashPE << " OpFlash time " << FlashTime;
 
         // Calculate the flash purity, only for the Marley events
         if (MaxOpHitPE / TotalFlashPE < fAdjOpFlashMaxPERatioCut && TotalFlashPE > fAdjOpFlashMinPECut)
         {
-          OpFlashMarlPur.push_back(OpFlashPur);
+          OpFlashPur.push_back(ThisOpFlashPur);
           OpFlashMaxPE.push_back(MaxOpHitPE);
           OpFlashSTD.push_back(FlashStdDev);
           OpFlashFast.push_back(TheFlash.FastToTotal());
+          OpFlashID.push_back(i);
           OpFlashPE.push_back(TheFlash.TotalPE());
           OpFlashX.push_back(TheFlash.XCenter());
           OpFlashY.push_back(TheFlash.YCenter());
@@ -810,8 +826,8 @@ namespace solar
         }
         if (abs(TheFlash.Time()) < 10)
         {
-          mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (max/tot/STD) " << MaxOpHitPE << "/" << TheFlash.TotalPE() << "/" << FlashStdDev << " with purity " << OpFlashPur << " time " << TheFlash.Time();
-          sOpFlashTruth += "Marley OpFlash PE (max/tot/STD) " + SolarAuxUtils::str(MaxOpHitPE) + "/" + SolarAuxUtils::str(TheFlash.TotalPE()) + "/" + SolarAuxUtils::str(FlashStdDev) + " with purity " + SolarAuxUtils::str(OpFlashPur) + " time " + SolarAuxUtils::str(TheFlash.Time()) + " vertex (" + SolarAuxUtils::str(TheFlash.YCenter()) + ", " + SolarAuxUtils::str(TheFlash.ZCenter()) + ")\n";
+          mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (max/tot/STD) " << MaxOpHitPE << "/" << TheFlash.TotalPE() << "/" << FlashStdDev << " with purity " << ThisOpFlashPur << " time " << TheFlash.Time();
+          sOpFlashTruth += "Marley OpFlash PE (max/tot/STD) " + SolarAuxUtils::str(MaxOpHitPE) + "/" + SolarAuxUtils::str(TheFlash.TotalPE()) + "/" + SolarAuxUtils::str(FlashStdDev) + " with purity " + SolarAuxUtils::str(ThisOpFlashPur) + " time " + SolarAuxUtils::str(TheFlash.Time()) + " vertex (" + SolarAuxUtils::str(TheFlash.YCenter()) + ", " + SolarAuxUtils::str(TheFlash.ZCenter()) + ")\n";
         }
       }
     }
@@ -1372,7 +1388,7 @@ namespace solar
           MAdjFlashRecoY.push_back(OpFlashY[j]);
           MAdjFlashRecoZ.push_back(OpFlashZ[j]);
           MAdjFlashR.push_back(OpFlashR);
-          MAdjFlashPur.push_back(OpFlashMarlPur[j]);
+          MAdjFlashPur.push_back(OpFlashPur[j]);
           // Initialize the residual variable for the flash matching
           // Compute the time distance between the cluster and the flash. Use factor 2 to convert us to TPC tics
           double MAdjFlashX = 0;
@@ -1389,14 +1405,14 @@ namespace solar
             MFlashFast = OpFlashFast[j];
             MFlashNHit = OpFlashNHit[j];
             MFlashMaxPE = OpFlashMaxPE[j];
-            MFlashPur = OpFlashMarlPur[j];
+            MFlashPur = OpFlashPur[j];
             MFlashSTD = OpFlashSTD[j];
             MFlashTime = OpFlashT[j];
             MFlashRecoX = OpFlashX[j];
             MFlashRecoY = OpFlashY[j];
             MFlashRecoZ = OpFlashZ[j];
             MFlashResidual = OpFlashResidual;
-            
+
             // Create an output string with the flash information
             sFlashReco = "*** Matched flash: \n - Time " + SolarAuxUtils::str(OpFlashT[j]) +
                          " PE " + SolarAuxUtils::str(OpFlashPE[j]) +
@@ -1404,7 +1420,7 @@ namespace solar
                          " MaxPE " + SolarAuxUtils::str(OpFlashMaxPE[j]) +
                          " Fast " + SolarAuxUtils::str(OpFlashFast[j]) +
                          " Reco X,Y,Z (" + SolarAuxUtils::str(MAdjFlashX) + ", " + SolarAuxUtils::str(OpFlashY[j]) + ", " + SolarAuxUtils::str(OpFlashZ[j]) + ")" +
-                         " MarlPur " + SolarAuxUtils::str(OpFlashMarlPur[j]) + "\n";
+                         " MarlPur " + SolarAuxUtils::str(OpFlashPur[j]) + "\n";
 
             MatchedOpFlashX = MAdjFlashX;
             MatchedOpFlashResidual = OpFlashResidual;
@@ -1564,7 +1580,8 @@ namespace solar
     TPart = {}, GeneratorParticles = {};
     HitNum = {};
     ClusterNum = {};
-    OpFlashMarlPur.clear();
+    OpFlashPur.clear();
+    OpFlashID.clear();
     OpFlashPE.clear();
     OpFlashSTD.clear();
     OpFlashFast.clear();

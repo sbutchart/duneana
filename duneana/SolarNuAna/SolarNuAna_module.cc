@@ -811,23 +811,25 @@ namespace solar
         // Calculate the flash purity, only for the Marley events
         if (MaxOpHitPE / TotalFlashPE < fAdjOpFlashMaxPERatioCut && TotalFlashPE > fAdjOpFlashMinPECut)
         {
+          OpFlashID.push_back(i);
           OpFlashPur.push_back(ThisOpFlashPur);
           OpFlashMaxPE.push_back(MaxOpHitPE);
           OpFlashSTD.push_back(FlashStdDev);
-          OpFlashFast.push_back(TheFlash.FastToTotal());
-          OpFlashID.push_back(i);
-          OpFlashPE.push_back(TheFlash.TotalPE());
+          OpFlashT.push_back(TheFlash.Time());
           OpFlashX.push_back(TheFlash.XCenter());
           OpFlashY.push_back(TheFlash.YCenter());
           OpFlashZ.push_back(TheFlash.ZCenter());
-          OpFlashT.push_back(TheFlash.Time());
+          OpFlashPE.push_back(TheFlash.TotalPE());
+          OpFlashFast.push_back(TheFlash.FastToTotal());
           OpFlashDeltaT.push_back(TheFlash.TimeWidth());
           OpFlashNHit.push_back(MatchedHits.size());
         }
         if (abs(TheFlash.Time()) < 10)
         {
-          mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (max/tot/STD) " << MaxOpHitPE << "/" << TheFlash.TotalPE() << "/" << FlashStdDev << " with purity " << ThisOpFlashPur << " time " << TheFlash.Time();
-          sOpFlashTruth += "Marley OpFlash PE (max/tot/STD) " + SolarAuxUtils::str(MaxOpHitPE) + "/" + SolarAuxUtils::str(TheFlash.TotalPE()) + "/" + SolarAuxUtils::str(FlashStdDev) + " with purity " + SolarAuxUtils::str(ThisOpFlashPur) + " time " + SolarAuxUtils::str(TheFlash.Time()) + " vertex (" + SolarAuxUtils::str(TheFlash.YCenter()) + ", " + SolarAuxUtils::str(TheFlash.ZCenter()) + ")\n";
+          mf::LogDebug("SolarNuAna") << "OpFlash PE " << TheFlash.TotalPE() << " with purity " << ThisOpFlashPur << " time " << TheFlash.Time();
+          sOpFlashTruth += "OpFlash PE " + SolarAuxUtils::str(TheFlash.TotalPE()) + " with purity " + SolarAuxUtils::str(ThisOpFlashPur) + " time " + SolarAuxUtils::str(TheFlash.Time()) + " vertex (" + SolarAuxUtils::str(TheFlash.YCenter()) + ", " + SolarAuxUtils::str(TheFlash.ZCenter()) + ")\n";
+          sOpFlashTruth += "\t*** 1st Sanity check: Ratio " + SolarAuxUtils::str(MaxOpHitPE / TotalFlashPE) + " <= " + SolarAuxUtils::str(fAdjOpFlashMaxPERatioCut) + " && Total PE " + SolarAuxUtils::str(TotalFlashPE) + " >= " + SolarAuxUtils::str(fAdjOpFlashMinPECut) + "\n";
+          sOpFlashTruth += "\t*** 2nd Sanity check: #OpHits " + SolarAuxUtils::str(int(MatchedHits.size())) + " >= " + SolarAuxUtils::str(int(TheFlash.PEs().size())) + "\n";
         }
       }
     }
@@ -1420,7 +1422,8 @@ namespace solar
                          " MaxPE " + SolarAuxUtils::str(OpFlashMaxPE[j]) +
                          " Fast " + SolarAuxUtils::str(OpFlashFast[j]) +
                          " Reco X,Y,Z (" + SolarAuxUtils::str(MAdjFlashX) + ", " + SolarAuxUtils::str(OpFlashY[j]) + ", " + SolarAuxUtils::str(OpFlashZ[j]) + ")" +
-                         " MarlPur " + SolarAuxUtils::str(OpFlashPur[j]) + "\n";
+                         " Residual " + SolarAuxUtils::str(OpFlashResidual) +
+                         " Purity " + SolarAuxUtils::str(OpFlashPur[j]) + "\n";
 
             MatchedOpFlashX = MAdjFlashX;
             MatchedOpFlashResidual = OpFlashResidual;

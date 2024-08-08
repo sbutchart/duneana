@@ -14,9 +14,9 @@ namespace solar
                                                        // fOpFlashAlgoCentroid(p.get<bool>("OpFlashAlgoCentroid"))
   {
   }
-  void AdjOpHitsUtils::MakeFlashVector(std::vector<FlashInfo> &FlashVec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, art::Event const &evt)
+  void AdjOpHitsUtils::MakeFlashVector(std::vector<FlashInfo> &FlashVec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &OpHitClusters, art::Event const &evt)
   {
-    for (std::vector<art::Ptr<recob::OpHit>> Cluster : Clusters)
+    for (std::vector<art::Ptr<recob::OpHit>> Cluster : OpHitClusters)
     {
       if (!Cluster.empty())
       {
@@ -118,59 +118,47 @@ namespace solar
     return;
   }
 
-  void AdjOpHitsUtils::CalcAdjOpHits(const std::vector<art::Ptr<recob::OpHit>> &Vec, std::vector<std::vector<art::Ptr<recob::OpHit>>> &Clusters, std::vector<std::vector<int>> &Idx)
+  void AdjOpHitsUtils::CalcAdjOpHits(const std::vector<art::Ptr<recob::OpHit>> &OpHitVector, std::vector<std::vector<art::Ptr<recob::OpHit>>> &OpHitClusters, std::vector<std::vector<int>> &OpHitClusterIdx)
   {
-    // Define MyVec as a copy of the input vector but only with hits with PE > MinPE
-    std::vector<art::Ptr<recob::OpHit>> MyVec = {};
-    MyVec.reserve(Vec.size());
-    // Initialize the vector of clusters and the vector of indices
-    Clusters.clear();
-    Idx.clear();
-    // Don't need cluster all the hits, only those with PE > MinPE that are close to a big hit
-    for (auto &hit : Vec)
-    {
-      if (hit->PE() >= fOpFlashAlgoPE)
-      {
-        MyVec.push_back(hit);
-      }
-    }
-    // If no hits with PE > MinPE are found, return
-    if (MyVec.empty())
-      return;
+    // Initialize the vector of OpHitClusters and the vector of indices
+    OpHitClusters.clear();
+    OpHitClusterIdx.clear();
 
-    // Define a debug string to print the number of hits selected
-    std::string sDebugInfo = "CalcAdjOpHits: Selected ophits " + SolarAuxUtils::str(int(MyVec.size())) + " from " + SolarAuxUtils::str(int(Vec.size())) + "\n";
+    // Create a sorting index based on the input vector
+    std::vector<int> sortingIndex(OpHitVector.size());
+    std::iota(sortingIndex.begin(), sortingIndex.end(), 0);
+    std::stable_sort(sortingIndex.begin(), sortingIndex.end(), [&](int a, int b)
+                     { return OpHitVector[a]->PeakTime() < OpHitVector[b]->PeakTime(); });
 
-    // Sort hits according to time
-    std::stable_sort(MyVec.begin(), MyVec.end(), [](art::Ptr<recob::OpHit> a, art::Ptr<recob::OpHit> b)
-                     { return a->PeakTime() < b->PeakTime(); });
+    // Create a vector to track if a hit has been clustered or not
+    std::vector<bool> ClusteredHits(OpHitVector.size(), false);
 
-    // Create a vector of bools to track if a hit has been clustered or not
-    std::vector<bool> ClusteredHits(MyVec.size(), false);
-
-    SolarAuxUtils::PrintInColor(sDebugInfo, SolarAuxUtils::GetColor("blue"), "Info");
-    for (auto it = MyVec.begin(); it != MyVec.end(); ++it)
+    for (auto it = sortingIndex.begin(); it != sortingIndex.end(); ++it)
     {
       std::string sOpHitClustering = "";
-      const auto &hit = *it;
+      std::vector<art::Ptr<recob::OpHit>> AdjHitVec = {};
+      std::vector<int> AdjHitIdx = {};
+
+      const auto &hit = OpHitVector[*it];
       if (hit->PE() < fOpFlashAlgoTriggerPE)
         continue;
 
       bool main_hit = true;
 
       // If a trigger hit is found, start a new cluster with the hits around it that are within the time and radius range
-      std::vector<art::Ptr<recob::OpHit>> AdjHitVec = {};
+      ClusteredHits[*it] = true;
       AdjHitVec.push_back(hit);
+      AdjHitIdx.push_back(*it);
       sOpHitClustering += "Trigger hit found: PE " + SolarAuxUtils::str(hit->PE()) + " CH " + SolarAuxUtils::str(hit->OpChannel()) + " Time " + SolarAuxUtils::str(hit->PeakTime()) + "\n";
 
       // Make use of the fact that the hits are sorted in time to only consider the hits that are adjacent in the vector up to a certain time range
-      for (auto it2 = it + 1; it2 != MyVec.end(); ++it2)
+      for (auto it2 = it + 1; it2 != sortingIndex.end(); ++it2)
       {
         // make sure we don't go out of bounds and the pointer is valid
-        if (it2 == MyVec.end())
+        if (it2 == sortingIndex.end())
           break;
 
-        auto &adjHit = *it2; // Update adjHit here
+        auto &adjHit = OpHitVector[*it2]; // Update adjHit here
 
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > fOpFlashAlgoTime)
           break;
@@ -201,7 +189,7 @@ namespace solar
           continue;
         }
         // If hit has already been clustered, skip
-        if (ClusteredHits[std::distance(MyVec.begin(), it2)])
+        if (ClusteredHits[*it2])
           continue;
 
         auto ref4 = TVector3(ref1.X(), ref1.Y(), ref1.Z()) - TVector3(ref2.X(), ref2.Y(), ref2.Z());
@@ -213,25 +201,25 @@ namespace solar
             sOpHitClustering += "Hit with PE > TriggerPE found: PE " + SolarAuxUtils::str(adjHit->PE()) + " CH " + SolarAuxUtils::str(adjHit->OpChannel()) + " Time " + SolarAuxUtils::str(adjHit->PeakTime()) + "\n";
 
             // Reset the ClusteredHits values for the hits that have been added to the cluster
-            for (auto it3 = AdjHitVec.begin(); it3 != AdjHitVec.end(); ++it3)
+            for (auto it3 = AdjHitIdx.begin(); it3 != AdjHitIdx.end(); ++it3)
             {
-              sOpHitClustering += "Removing hit: CH " + SolarAuxUtils::str((*it3)->OpChannel()) + " Time " + SolarAuxUtils::str((*it3)->PeakTime()) + "\n";
-              ClusteredHits[std::distance(MyVec.begin(), it3)] = false;
+              ClusteredHits[*it3] = false;
+              sOpHitClustering += "Removing hit: CH " + SolarAuxUtils::str(OpHitVector[*it3]->OpChannel()) + " Time " + SolarAuxUtils::str(OpHitVector[*it3]->PeakTime()) + "\n";
             }
             break;
           }
           AdjHitVec.push_back(adjHit);
-          ClusteredHits[std::distance(MyVec.begin(), it2)] = true;
+          ClusteredHits[*it2] = true;
           sOpHitClustering += "Adding hit: PE " + SolarAuxUtils::str(adjHit->PE()) + " CH " + SolarAuxUtils::str(adjHit->OpChannel()) + " Time " + SolarAuxUtils::str(adjHit->PeakTime()) + "\n";
         }
       }
 
-      for (auto it3 = it - 1; it3 != MyVec.begin() - 1; --it3)
+      for (auto it4 = it - 1; it4 != sortingIndex.begin(); --it4)
       {
         // make sure we don't go out of bounds and the pointer is valid
-        if (it3 == MyVec.begin())
+        if (it4 == sortingIndex.begin())
           break;
-        auto &adjHit = *it3;
+        auto &adjHit = OpHitVector[*it4];
 
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > fOpFlashAlgoTime)
           break;
@@ -261,7 +249,7 @@ namespace solar
         }
 
         // if hit has already been clustered, skip
-        if (ClusteredHits[std::distance(MyVec.begin(), it3)])
+        if (ClusteredHits[*it4])
           continue;
 
         auto ref4 = TVector3(ref1.X(), ref1.Y(), ref1.Z()) - TVector3(ref2.X(), ref2.Y(), ref2.Z());
@@ -271,33 +259,28 @@ namespace solar
           {
             main_hit = false;
             sOpHitClustering += "*** Hit with PE > TriggerPE found: PE " + SolarAuxUtils::str(adjHit->PE()) + " CH " + SolarAuxUtils::str(adjHit->OpChannel()) + " Time " + SolarAuxUtils::str(adjHit->PeakTime()) + "\n";
-            for (auto it4 = AdjHitVec.begin(); it4 != AdjHitVec.end(); ++it4)
+
+            // Reset the ClusteredHits values for the hits that have been added to the cluster
+            for (auto it5 = AdjHitIdx.begin(); it5 != AdjHitIdx.end(); ++it5)
             {
-              ClusteredHits[std::distance(MyVec.begin(), it4)] = false;
-              sOpHitClustering += "Removing hit: CH " + SolarAuxUtils::str((*it4)->OpChannel()) + " Time " + SolarAuxUtils::str((*it4)->PeakTime()) + "\n";
+              ClusteredHits[*it5] = false;
+              sOpHitClustering += "Removing hit: CH " + SolarAuxUtils::str(OpHitVector[*it5]->OpChannel()) + " Time " + SolarAuxUtils::str(OpHitVector[*it5]->PeakTime()) + "\n";
             }
             break;
           }
           AdjHitVec.push_back(adjHit);
-          ClusteredHits[std::distance(MyVec.begin(), it3)] = true;
+          ClusteredHits[*it4] = true;
           sOpHitClustering += "Adding hit: PE " + SolarAuxUtils::str(adjHit->PE()) + " CH " + SolarAuxUtils::str(adjHit->OpChannel()) + " Time " + SolarAuxUtils::str(adjHit->PeakTime()) + "\n";
         }
       }
 
       if (main_hit && int(AdjHitVec.size()) >= fOpFlashAlgoNHit)
       {
-        Clusters.push_back(std::move(AdjHitVec));
-        sOpHitClustering += "Cluster size: " + SolarAuxUtils::str(int(Clusters.back().size())) + "\n";
-        SolarAuxUtils::PrintInColor(sOpHitClustering, SolarAuxUtils::GetColor("green"), "Debug");
-
         // Store the original indices of the clustered hits
-        std::vector<int> clusterIdx;
-        for (const auto &hit : Clusters.back())
-        {
-          int idx = std::distance(Vec.begin(), std::find(Vec.begin(), Vec.end(), hit));
-          clusterIdx.push_back(idx);
-        }
-        Idx.push_back(clusterIdx);
+        OpHitClusterIdx.push_back(AdjHitIdx);
+        OpHitClusters.push_back(std::move(AdjHitVec));
+        sOpHitClustering += "Cluster size: " + SolarAuxUtils::str(int(OpHitClusters.back().size())) + "\n";
+        SolarAuxUtils::PrintInColor(sOpHitClustering, SolarAuxUtils::GetColor("green"), "Debug");
       }
       else
       {

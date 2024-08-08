@@ -122,6 +122,10 @@ namespace solar
   {
     // Define MyVec as a copy of the input vector but only with hits with PE > MinPE
     std::vector<art::Ptr<recob::OpHit>> MyVec = {};
+    MyVec.reserve(Vec.size());
+    // Initialize the vector of clusters and the vector of indices
+    Clusters.clear();
+    Idx.clear();
     // Don't need cluster all the hits, only those with PE > MinPE that are close to a big hit
     for (auto &hit : Vec)
     {
@@ -167,8 +171,11 @@ namespace solar
           break;
 
         auto &adjHit = *it2; // Update adjHit here
+
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > fOpFlashAlgoTime)
           break;
+        if (adjHit->PE() < fOpFlashAlgoPE)
+          continue;
 
         int refHit1 = hit->OpChannel();
         int refHit2 = adjHit->OpChannel();
@@ -184,7 +191,7 @@ namespace solar
         }
         else if (fGeometry == "VD")
         {
-          // Only use cothode hits in VD for now
+          // Only use cathode hits in VD for now
           if (ref1.X() > -fDetectorSizeX || ref2.X() > -fDetectorSizeX)
             continue;
         }
@@ -228,6 +235,8 @@ namespace solar
 
         if (std::abs(adjHit->PeakTime() - hit->PeakTime()) > fOpFlashAlgoTime)
           break;
+        if (adjHit->PE() < fOpFlashAlgoPE)
+          continue;
 
         int refHit1 = hit->OpChannel();
         int refHit2 = adjHit->OpChannel();

@@ -5,6 +5,6 @@
 #include "solar_ana_radiological_decay0_dune10kt_1x2x6.fcl"
 
 physics.analyzers.solarnuana.SaveSignalOpHits: true
-physics.analyzers.solarnuana.SaveAdjOpFlashes: true
+physics.analyzers.solarnuana.SaveOpFlashInfo:  true
 
 physics.analyzers.solarnuana.OpFlashLabel: "solarflash" # Use solarflshed produced with solar_reco_dune10kt_1x2x6.fcl

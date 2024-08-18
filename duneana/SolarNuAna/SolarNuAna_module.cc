@@ -118,6 +118,7 @@ namespace solar
     // --- MatchedFlash Variables
     int MFlashNHit;
     float MFlashR, MFlashPE, MFlashMaxPE, MFlashPur, MFlashFast, MFlashTime, MFlashSTD, MFlashRecoX, MFlashRecoY, MFlashRecoZ, MFlashResidual;
+    bool MFlashCorrect;
 
     // --- Histograms to fill about collection plane hits
     float MainElectronEndPointX;
@@ -430,6 +431,7 @@ namespace solar
     fSolarNuAnaTree->Branch("MatchedOpFlashRecoY", &MFlashRecoY, "MatchedOpFlashRecoY/F");          // Matched flash' reco Y [cm]
     fSolarNuAnaTree->Branch("MatchedOpFlashRecoZ", &MFlashRecoZ, "MatchedOpFlashRecoZ/F");          // Matched flash' reco Z [cm]
     fSolarNuAnaTree->Branch("MatchedOpFlashResidual", &MFlashResidual, "MatchedOpFlashResidual/F"); // Matched flash' residual wrt. cluster
+    fSolarNuAnaTree->Branch("MatchedOpFlashCorrectly", &MFlashCorrect);                             // Matched flash' correctnes (bool)
 
     fConfigTree->AddFriend(fSolarNuAnaTree);
     fMCTruthTree->AddFriend(fSolarNuAnaTree);
@@ -673,6 +675,7 @@ namespace solar
     OpHitNum = int(OpHitList.size());
     if (fGenerateAdjOpFlash)
     {
+      fOpFlashLabel = "solarflash";
       std::vector<AdjOpHitsUtils::FlashInfo> FlashVec;
       adjophits->CalcAdjOpHits(OpHitList, OpHitVec, OpHitIdx);
       adjophits->MakeFlashVector(FlashVec, OpHitVec, evt);
@@ -734,10 +737,12 @@ namespace solar
           ThisOpFlashPur /= int(OpHitVec[i].size());
         }
         OpFlashPur.push_back(ThisOpFlashPur);
-        if (abs(TheFlash.Time) < 20)
+        if (abs(TheFlash.Time) < 10)
         {
           mf::LogDebug("SolarNuAna") << "Marley OpFlash PE (fast/ratio/tot/STD) " << TheFlash.FastToTotal << "/" << TheFlash.MaxPE / TheFlash.PE << "/" << TheFlash.PE << "/" << TheFlash.STD << " with purity " << ThisOpFlashPur << " time " << TheFlash.Time;
-          sOpFlashTruth += "Marley OpFlash PE (fast/ratio/tot/STD) " + SolarAuxUtils::str(TheFlash.FastToTotal) + "/" + SolarAuxUtils::str(TheFlash.MaxPE / TheFlash.PE) + "/" + SolarAuxUtils::str(TheFlash.PE) + "/" + SolarAuxUtils::str(TheFlash.STD) + " with purity " + SolarAuxUtils::str(ThisOpFlashPur) + " time " + SolarAuxUtils::str(TheFlash.Time) + " vertex (" + SolarAuxUtils::str(TheFlash.X) + ", " + SolarAuxUtils::str(TheFlash.Y) + ", " + SolarAuxUtils::str(TheFlash.Z) + ")\n";
+          sOpFlashTruth += "OpFlash PE " + SolarAuxUtils::str(TheFlash.PE) + " with purity " + SolarAuxUtils::str(ThisOpFlashPur) + " time " + SolarAuxUtils::str(TheFlash.Time) + " vertex (" + SolarAuxUtils::str(TheFlash.X) + ", " + SolarAuxUtils::str(TheFlash.Y) + ", " + SolarAuxUtils::str(TheFlash.Z) + ")\n";
+          sOpFlashTruth += "\t*** 1st Sanity check: Ratio " + SolarAuxUtils::str(TheFlash.MaxPE / TheFlash.PE) + " <= " + SolarAuxUtils::str(fAdjOpFlashMaxPERatioCut) + " && Total PE " + SolarAuxUtils::str(TheFlash.PE) + " >= " + SolarAuxUtils::str(fAdjOpFlashMinPECut) + "\n";
+          sOpFlashTruth += "\t*** 2nd Sanity check: #OpHits " + SolarAuxUtils::str(int(OpHitVec[i].size())) + " >= " + SolarAuxUtils::str(TheFlash.NHit) + "\n";
         }
       }
     }
@@ -1355,7 +1360,7 @@ namespace solar
             if ((trk_start - ThisClVertex).Mag() > MaxVertexDistance && (trk_end - ThisClVertex).Mag() > MaxVertexDistance)
             {
               continue;
-            };
+            }
             MTrackNPoints = trk.NPoints();
             MTrackStart = {trk.Start().X(), trk.Start().Y(), trk.Start().Z()};
             MTrackEnd = {trk.End().X(), trk.End().Y(), trk.End().Z()};
@@ -1369,13 +1374,7 @@ namespace solar
 
         for (int j = 0; j < int(OpFlashPE.size()); j++)
         {
-          if ((MVecTime[i] - OpFlashT[j]) < 0 || (MVecTime[i] - OpFlashT[j]) > fAdjOpFlashTime)
-          {
-            continue;
-          }
-
-          // Instead of a circular cut, we apply an elliptical cut (dy/a)^2+(dz/b)^2<1
-          if (pow(abs(MVecRecY[i] - OpFlashY[j]) / fAdjOpFlashY, 2) + pow(abs(MVecRecZ[i] - OpFlashZ[j]) / fAdjOpFlashZ, 2) > 1)
+          if ((MVecTime[i] - OpFlashT[j]) < 0 || (MVecTime[i] - OpFlashT[j]) > fAdjOpFlashTime || abs(MVecRecY[i] - OpFlashY[j]) > fAdjOpFlashY || abs(MVecRecZ[i] - OpFlashZ[j]) > fAdjOpFlashZ)
           {
             continue;
           }
@@ -1391,16 +1390,20 @@ namespace solar
           MAdjFlashRecoZ.push_back(OpFlashZ[j]);
           MAdjFlashR.push_back(OpFlashR);
           MAdjFlashPur.push_back(OpFlashPur[j]);
-          // Initialize the residual variable for the flash matching
           // Compute the time distance between the cluster and the flash. Use factor 2 to convert us to TPC tics
           double MAdjFlashX = 0;
           solaraux->ComputeDistanceX(MAdjFlashX, MVecTime[i], 2 * OpFlashT[j]);
+          // For HD 1x2x6 (only 1 APA) the x coordinate is determined by the sign of the flash x coordinate
+          if (OpFlashX[j] < 0)
+          {
+            MAdjFlashX = -MAdjFlashX;
+          }
           // Compute the residual between the predicted cluster signal and the flash
           std::string sFlashMatching = "Testing flash " + SolarAuxUtils::str(j) + " with time " + SolarAuxUtils::str(OpFlashT[j]) + " and PE " + SolarAuxUtils::str(OpFlashPE[j]);
           solaraux->PrintInColor(sFlashMatching, SolarAuxUtils::GetColor(sResultColor), "Debug");
           adjophits->FlashMatchResidual(OpFlashResidual, OpHitVec[j], MAdjFlashX, double(MVecRecY[i]), double(MVecRecZ[i]));
           // If the residual is smaller than the minimum residual, update the minimum residual and the matched flash
-          if (OpFlashResidual < MatchedOpFlashResidual || MatchedOpFlashResidual == 1e6)
+          if (OpFlashResidual < MatchedOpFlashResidual || MatchedOpFlashResidual == -1e6)
           {
             MFlashR = OpFlashR;
             MFlashPE = OpFlashPE[j];
@@ -1416,14 +1419,14 @@ namespace solar
             MFlashResidual = OpFlashResidual;
 
             // Create an output string with the flash information
-            sFlashReco = "*** Matched flash: \n - Time " + SolarAuxUtils::str(OpFlashT[j]) +
-                         " PE " + SolarAuxUtils::str(OpFlashPE[j]) +
+            sFlashReco = "*** Matched flash: \n - Purity " + SolarAuxUtils::str(OpFlashPur[j]) +
                          " NHit " + SolarAuxUtils::str(OpFlashNHit[j]) +
-                         " MaxPE " + SolarAuxUtils::str(OpFlashMaxPE[j]) +
+                         " PE " + SolarAuxUtils::str(OpFlashPE[j]) +
+                         " MaxPE " + SolarAuxUtils::str(OpFlashMaxPE[j]) + "\n" +
+                         " Reco X,Y,Z (" + SolarAuxUtils::str(MAdjFlashX) + ", " + SolarAuxUtils::str(OpFlashY[j]) + ", " + SolarAuxUtils::str(OpFlashZ[j]) + ")" + "\n" +
+                         " Time " + SolarAuxUtils::str(OpFlashT[j]) +
                          " Fast " + SolarAuxUtils::str(OpFlashFast[j]) +
-                         " Reco X,Y,Z (" + SolarAuxUtils::str(MAdjFlashX) + ", " + SolarAuxUtils::str(OpFlashY[j]) + ", " + SolarAuxUtils::str(OpFlashZ[j]) + ")" +
-                         " Residual " + SolarAuxUtils::str(OpFlashResidual) +
-                         " Purity " + SolarAuxUtils::str(OpFlashPur[j]) + "\n";
+                         " Residual " + SolarAuxUtils::str(OpFlashResidual) + "\n";
 
             MatchedOpFlashX = MAdjFlashX;
             MatchedOpFlashResidual = OpFlashResidual;
@@ -1492,6 +1495,10 @@ namespace solar
         }
         else
         {
+          if (abs(MClTruth->Vx() - MatchedOpFlashX) < 10)
+          {
+            MFlashCorrect = true;
+          };
           MMainVertex = {MClTruth->Vx(), MClTruth->Vy(), MClTruth->Vz()};
           MEndVertex = {MClTruth->EndX(), MClTruth->EndY(), MClTruth->EndZ()};
           MMainPDG = MClTruth->PdgCode();
@@ -1560,17 +1567,18 @@ namespace solar
     OpFlashNum = 0;
     MTrackNPoints = 0;
     MTrackChi2 = 0;
-    MFlashPE = 1e-6;
-    MFlashFast = 1e-6;
-    MFlashNHit = 1e-6;
-    MFlashMaxPE = 1e-6;
-    MFlashPur = 1e-6;
-    MFlashSTD = 1e-6;
-    MFlashTime = 1e-6;
-    MFlashRecoX = 1e-6;
-    MFlashRecoY = 1e-6;
-    MFlashRecoZ = 1e-6;
-    MFlashResidual = 1e-6;
+    MFlashPE = -1e6;
+    MFlashFast = -1e6;
+    MFlashNHit = -1e6;
+    MFlashMaxPE = -1e6;
+    MFlashPur = -1e6;
+    MFlashSTD = -1e6;
+    MFlashTime = -1e6;
+    MFlashRecoX = -1e6;
+    MFlashRecoY = -1e6;
+    MFlashRecoZ = -1e6;
+    MFlashResidual = -1e6;
+    MFlashCorrect = false;
     MarleyElectronDepList = {};
     MarleyPDGList = {};
     MarleyPDGDepList = {};

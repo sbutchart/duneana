@@ -311,7 +311,7 @@ namespace solar
     // Get the first hit PE and calculate the squared distance and angle to the reference point
     float firstHitPE = Hits[maxPEIdx]->PE();
     float firstHitDistSq = pow(firstHitY - y, 2) + pow(firstHitZ - z, 2);
-    float firstHitAngle = atan2(sqrt(firstHitDistSq), x);
+    float firstHitAngle = atan2(sqrt(firstHitDistSq), abs(x));
 
     // Calculate the expected PE value for the reference point based on the first hit PE and the squared distance + angle
     float refHitPE = firstHitPE * (pow(x, 2) + firstHitDistSq) / pow(x, 2) / cos(firstHitAngle);
@@ -325,7 +325,7 @@ namespace solar
 
       // Make a residual calculation of the PE distribution in the OpHits of the flash wrt the charge deposition in the TPC.
       float hitDistSq = pow(hitY - y, 2) + pow(hitZ - z, 2);
-      float hitAngle = atan2(sqrt(hitDistSq), x);
+      float hitAngle = atan2(sqrt(hitDistSq), abs(x));
 
       // The expected distribution of PE corresponds to a decrease of 1/r² with the distance from the flash center. Between adjacent OpHits, the expected decrease in charge has the form r²/(r²+d²)
       float predPE = refHitPE * cos(hitAngle) * pow(x, 2) / (pow(x, 2) + hitDistSq);
@@ -336,14 +336,13 @@ namespace solar
 
     Residual /= PE;
     Residual /= float(Hits.size());
-
     std::string debug = "PE: " + SolarAuxUtils::str(PE) +
                         " FisrtPE: " + SolarAuxUtils::str(firstHitPE) +
                         " RefPE: " + SolarAuxUtils::str(refHitPE) +
                         " NHits: " + SolarAuxUtils::str(int(Hits.size())) +
                         " X: " + SolarAuxUtils::str(x) +
                         " Dist: " + SolarAuxUtils::str(sqrt(firstHitDistSq)) +
-                        " Angle: " + SolarAuxUtils::str(firstHitAngle) +
+                        " Angle: " + SolarAuxUtils::str(firstHitAngle * 360 / M_PI) +
                         " Residual: " + SolarAuxUtils::str(Residual);
 
     SolarAuxUtils::PrintInColor(debug, SolarAuxUtils::GetColor("yellow"), "Debug");

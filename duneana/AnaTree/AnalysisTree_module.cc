@@ -1759,7 +1759,6 @@ void dune::AnalysisTreeDataStruct::TrackDataStruct::Clear() {
 
     FillWith(trkpidpdg[iTrk]    , -1);
     FillWith(trkpidndf[iTrk]    , -9999);
-    FillWith(trkpidchi[iTrk]    , -99999.);
     FillWith(trkpidchipr[iTrk]  , -99999.);
     FillWith(trkpidchika[iTrk]  , -99999.);
     FillWith(trkpidchipi[iTrk]  , -99999.);

@@ -5984,8 +5984,8 @@ void dune::AnalysisTree::HitsPurity(detinfo::DetectorClocksData const& clockData
                                     std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, Float_t& completeness, std::map<Int_t,Int_t> HitsToMCCounts){
 
   trackid = -1;
-  purity = -1;
-  completeness = -1;
+  purity = 0;
+  completeness = 0;
 
   TruthMatchUtils::G4ID g4ID(TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, hits,fRollUpUnsavedIDs));
 
@@ -6010,7 +6010,11 @@ void dune::AnalysisTree::HitsPurity(detinfo::DetectorClocksData const& clockData
     // Compute completeness using TruthMatchUtils counts
     auto allhitstruth = HitsToMCCounts.find(g4ID)->second;
     completeness = correct_hits/allhitstruth;
-  }   
+  }
+  else{
+    purity = -1;
+    completeness = -1;
+  }
 }
 
 // Calculate distance to boundary.

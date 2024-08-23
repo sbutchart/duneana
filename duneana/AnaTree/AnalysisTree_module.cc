@@ -270,7 +270,6 @@ namespace dune {
       TrackData_t<Short_t> trkevtxid;     // Vertex ID associated with the track end
       PlaneData_t<Int_t> trkpidpdg;       // [deprecated] particle PID pdg code
       PlaneData_t<Int_t> trkpidndf;       // Particle PID ndf based on valid hits
-      PlaneData_t<Float_t> trkpidchi;
       PlaneData_t<Float_t> trkpidchipr;   // particle PID chisq for proton
       PlaneData_t<Float_t> trkpidchika;   // particle PID chisq for kaon
       PlaneData_t<Float_t> trkpidchipi;   // particle PID chisq for pion
@@ -1646,7 +1645,6 @@ void dune::AnalysisTreeDataStruct::TrackDataStruct::Resize(size_t nTracks)
   // PID variables
   trkpidpdg.resize(MaxTracks);
   trkpidndf.resize(MaxTracks);
-  trkpidchi.resize(MaxTracks);
   trkpidchipr.resize(MaxTracks);
   trkpidchika.resize(MaxTracks);
   trkpidchipi.resize(MaxTracks);
@@ -1761,7 +1759,6 @@ void dune::AnalysisTreeDataStruct::TrackDataStruct::Clear() {
 
     FillWith(trkpidpdg[iTrk]    , -1);
     FillWith(trkpidndf[iTrk]    , -9999);
-    FillWith(trkpidchi[iTrk]    , -99999.);
     FillWith(trkpidchipr[iTrk]  , -99999.);
     FillWith(trkpidchika[iTrk]  , -99999.);
     FillWith(trkpidchipi[iTrk]  , -99999.);
@@ -1977,9 +1974,6 @@ void dune::AnalysisTreeDataStruct::TrackDataStruct::SetAddresses(
 
   BranchName = "trkpidndf_" + TrackLabel;
   CreateBranch(BranchName, trkpidndf, BranchName + NTracksIndexStr + "[3]/I");
-
-  BranchName = "trkpidchi_" + TrackLabel;
-  CreateBranch(BranchName, trkpidchi, BranchName + NTracksIndexStr + "[3]/F");
 
   BranchName = "trkpidchipr_" + TrackLabel;
   CreateBranch(BranchName, trkpidchipr, BranchName + NTracksIndexStr + "[3]/F");
@@ -5984,8 +5978,8 @@ void dune::AnalysisTree::HitsPurity(detinfo::DetectorClocksData const& clockData
                                     std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, Float_t& completeness, std::map<Int_t,Int_t> HitsToMCCounts){
 
   trackid = -1;
-  purity = -1;
-  completeness = -1;
+  purity = 0;
+  completeness = 0;
 
   TruthMatchUtils::G4ID g4ID(TruthMatchUtils::TrueParticleIDFromTotalRecoHits(clockData, hits,fRollUpUnsavedIDs));
 
@@ -6010,7 +6004,11 @@ void dune::AnalysisTree::HitsPurity(detinfo::DetectorClocksData const& clockData
     // Compute completeness using TruthMatchUtils counts
     auto allhitstruth = HitsToMCCounts.find(g4ID)->second;
     completeness = correct_hits/allhitstruth;
-  }   
+  }
+  else{
+    purity = -1;
+    completeness = -1;
+  }
 }
 
 // Calculate distance to boundary.

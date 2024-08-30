@@ -1,0 +1,32 @@
+add_subdirectory(fcl)
+art_make(BASENAME_ONLY
+         MODULE_LIBRARIES
+         dunecore::DAQTriggerSim_TriggerDataProducts
+         larcore::Geometry_Geometry_service
+         lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+         larcorealg::Geometry
+         lardataobj::RawData
+         nusimdata::SimulationBase
+         larsim::MCCheater_BackTrackerService_service
+         larsim::MCCheater_PhotonBackTrackerService_service
+         larsim::MCCheater_ParticleInventoryService_service
+         nug4::ParticleNavigation
+         art::Framework_Core
+         art::Framework_Principal
+         art::Framework_Services_Registry
+         art_root_io::tfile_support
+         ROOT::Core
+         art_root_io::TFileService_service
+         art::Persistency_Common
+         art::Persistency_Provenance
+         art::Utilities 
+	 canvas::canvas
+         messagefacility::MF_MessageLogger
+         cetlib::cetlib 
+	 cetlib_except::cetlib_except
+         ROOT::Tree
+         )
+
+install_fhicl()
+install_headers()
+install_source()

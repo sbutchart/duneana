@@ -20,7 +20,7 @@ art_make(BASENAME_ONLY
          messagefacility::MF_MessageLogger
          cetlib::cetlib 
 	 cetlib_except::cetlib_except
-         ROOT::Core ROOT::Hist ROOT::Tree
+         ROOT::Core ROOT::Hist ROOT::Tree ROOT::Gpad
          )
 
 install_fhicl()
